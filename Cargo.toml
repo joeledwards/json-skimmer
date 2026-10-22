@@ -1,0 +1,11 @@
+[package]
+name = "json-skimmer"
+version = "0.1.0"
+edition = "2024"
+description = "A recoverable, event-driven streaming JSON parser"
+license = "MIT"
+keywords = ["json", "parser", "streaming", "incremental"]
+categories = ["parser-implementations"]
+
+[dependencies]
+
