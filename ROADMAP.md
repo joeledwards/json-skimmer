@@ -8,6 +8,23 @@ The minimum feature set for the first stable release is defined by the
 FLON may still be included in `1.0.0`, but they must not delay validation of the
 FLON use case unless they are part of the promised public API.
 
+## Priority follow-up from project review
+
+- [ ] Validate UTF-8 incrementally across chunk boundaries and reject invalid
+      sequences before emitting `CandidateEnd`; confirmed FLON output depends
+      on this validity guarantee.
+- [ ] Add configurable nesting limits with documented defaults and recovery
+      behavior so deeply nested input cannot grow the structural stack without
+      bound. Expose configuration for FLON consumers.
+- [ ] Expand chunk-boundary and invalid-input tests, especially malformed and
+      incomplete UTF-8, nesting-limit boundaries, and EOF event sequences.
+- [ ] Reconcile the roadmap and FLON requirements with functionality already
+      demonstrated by the FLON consumer, distinguishing consumer-provided
+      behavior from parser APIs that remain to be implemented.
+
+Related formatter error propagation, color accounting, and documentation tasks
+are prioritized in the [FLON roadmap](../flon/ROADMAP.md).
+
 ## Current foundation
 
 The following foundation has been compiled, formatted, linted, and exercised
