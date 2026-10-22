@@ -10,8 +10,8 @@ FLON use case unless they are part of the promised public API.
 
 ## Current foundation
 
-The following code exists but has not yet been compiled or run in the current
-development environment because a Rust toolchain is unavailable:
+The following foundation has been compiled, formatted, linted, and exercised
+by the initial unit tests in the current development environment:
 
 - [x] Dependency-free crate scaffold
 - [x] Incremental `push` interface with borrowed event fragments
@@ -25,8 +25,8 @@ development environment because a Rust toolchain is unavailable:
 
 ## Milestone 1: correct bounded-memory event parser
 
-- [ ] Compile the crate and resolve all diagnostics
-- [ ] Apply `rustfmt` and pass `clippy`
+- [x] Compile the crate and resolve all diagnostics
+- [x] Apply `rustfmt` and pass `clippy`
 - [ ] Validate UTF-8 incrementally across chunk boundaries
 - [ ] Coalesce contiguous string and number fragments within each input chunk
 - [ ] Add configurable nesting and candidate-span limits
