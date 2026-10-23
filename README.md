@@ -7,6 +7,11 @@ candidates, and can continue scanning for later JSON instead of terminating.
 The crate is in early development. Its core parser is dependency-free and does
 not buffer complete documents.
 
+The default maximum nesting depth is 1,000 containers, counting the root as
+depth one. Use `Parser::with_max_depth(mode, NonZeroUsize)` to select a positive
+custom limit. Exceeding it emits `DepthLimitExceeded` before the rejected
+container opens.
+
 ## Project documents
 
 - [Design](docs/design.md) describes the intended behavior, architecture, and

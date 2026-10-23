@@ -191,3 +191,16 @@ must be feature-gated.
 - Hiding buffering behind an API that appears bounded-memory.
 - Guaranteeing that speculative raw events belong to a candidate that will
   eventually be valid.
+
+### Container depth limit
+
+`Parser::new` and `Parser::default` limit simultaneous open containers to 1,000.
+The root counts as depth one; scalar values add no depth and closed siblings
+release their depth. `Parser::with_max_depth(mode, NonZeroUsize)` accepts a
+positive custom limit. Before pushing a frame or emitting an opening event
+that would exceed the limit, the parser emits `DepthLimitExceeded` at that
+opener’s absolute byte offset. Single mode becomes terminal. Scan mode
+discards candidate state and consumes the rejected opener; scanning resumes
+with the following byte. Later openers may still start candidates, including
+ones inside the rejected document. This policy does not skip the whole
+document or replay the rejected opener.

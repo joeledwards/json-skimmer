@@ -4,7 +4,11 @@
 //! token fragments are delivered to a callback before `push` returns, allowing
 //! the parser to remain independent of the size of the input document.
 
+use std::num::NonZeroUsize;
 use std::ops::Range;
+
+/// Maximum simultaneous open containers by default; the root has depth one.
+pub const DEFAULT_MAX_DEPTH: NonZeroUsize = NonZeroUsize::new(1000).unwrap();
 
 /// How the parser treats bytes outside a JSON candidate.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -101,6 +105,8 @@ pub enum ErrorKind {
     InvalidUnicodeEscape,
     /// Malformed UTF-8 at the offending byte, or an incomplete sequence at EOF.
     InvalidUtf8,
+    /// Opening another container would exceed the configured maximum depth.
+    DepthLimitExceeded,
     ControlCharacterInString,
     InvalidNumber,
     UnexpectedEnd,
@@ -216,6 +222,7 @@ impl LiteralKind {
 #[derive(Debug)]
 pub struct Parser {
     mode: Mode,
+    max_depth: NonZeroUsize,
     offset: u64,
     candidate_start: Option<u64>,
     root_kind: Option<ContainerKind>,
@@ -234,8 +241,15 @@ impl Default for Parser {
 
 impl Parser {
     pub fn new(mode: Mode) -> Self {
+        Self::with_max_depth(mode, DEFAULT_MAX_DEPTH)
+    }
+
+    /// Sets a positive container-depth limit. The root counts as depth one.
+    /// A rejected opener is consumed; scan mode resumes at the following byte.
+    pub fn with_max_depth(mode: Mode, max_depth: NonZeroUsize) -> Self {
         Self {
             mode,
+            max_depth,
             offset: 0,
             candidate_start: None,
             root_kind: None,
@@ -256,12 +270,17 @@ impl Parser {
             let absolute = self.offset + index as u64;
             let fragment = &input[index..index + 1];
             let was_active = self.candidate_start.is_some();
-            self.process(byte, fragment, absolute, &mut emit);
+            let mut depth_exceeded = false;
+            self.process(byte, fragment, absolute, &mut |event| {
+                depth_exceeded |= matches!(&event, Event::Invalid(error) if error.kind == ErrorKind::DepthLimitExceeded);
+                emit(event);
+            });
             // Discard recovery does not revisit earlier input, but the byte that
             // exposed the conflict can itself open the next candidate.
             if was_active
                 && self.candidate_start.is_none()
                 && !self.terminal
+                && !depth_exceeded
                 && matches!(byte, b'{' | b'[')
             {
                 self.scan(byte, absolute, &mut emit);
@@ -606,6 +625,10 @@ impl Parser {
     }
 
     fn open<'a>(&mut self, kind: ContainerKind, at: u64, emit: &mut impl FnMut(Event<'a>)) {
+        if self.stack.len() >= self.max_depth.get() {
+            self.invalidate(ErrorKind::DepthLimitExceeded, at, emit);
+            return;
+        }
         match kind {
             ContainerKind::Object => {
                 self.stack.push(Frame::Object(ObjectState::KeyOrEnd));

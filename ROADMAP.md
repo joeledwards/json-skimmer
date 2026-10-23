@@ -13,7 +13,7 @@ FLON use case unless they are part of the promised public API.
 - [x] Validate UTF-8 incrementally across chunk boundaries and reject invalid
       sequences before emitting `CandidateEnd`; confirmed FLON output depends
       on this validity guarantee.
-- [ ] Add configurable nesting limits with documented defaults and recovery
+- [x] Add configurable nesting limits with documented defaults and recovery
       behavior so deeply nested input cannot grow the structural stack without
       bound. Expose configuration for FLON consumers.
 - [ ] Expand chunk-boundary and invalid-input tests, especially malformed and

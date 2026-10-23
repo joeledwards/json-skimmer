@@ -1,5 +1,120 @@
 use super::*;
 
+fn nested_containers(depth: usize, shape: &str) -> (Vec<u8>, Vec<u64>) {
+    let mut input = Vec::new();
+    let mut openers = Vec::new();
+    let mut closers = Vec::new();
+    for level in 0..depth {
+        openers.push(input.len() as u64);
+        if shape == "objects" || (shape == "mixed" && level % 2 == 1) {
+            input.extend_from_slice(br#"{"k":"#);
+            closers.push(b'}');
+        } else {
+            input.push(b'[');
+            closers.push(b']');
+        }
+    }
+    input.extend_from_slice(b"null");
+    input.extend(closers.into_iter().rev());
+    (input, openers)
+}
+
+#[test]
+fn configurable_depth_limits_count_only_open_containers() {
+    for shape in ["arrays", "objects", "mixed"] {
+        for limit in 1_usize..=4 {
+            for depth in [limit.saturating_sub(1).max(1), limit, limit + 1] {
+                let (input, openers) = nested_containers(depth, shape);
+                let maximum = std::num::NonZeroUsize::new(limit).unwrap();
+                let (events, errors, spans) = parse_with_depth(&input, Mode::Single, &[], maximum);
+                let starts = events
+                    .iter()
+                    .filter(|event| {
+                        event.starts_with("ObjectStart") || event.starts_with("ArrayStart")
+                    })
+                    .count();
+                assert_eq!(starts, depth.min(limit));
+                if depth <= limit {
+                    assert!(errors.is_empty(), "{shape}, {depth}, {limit}: {errors:?}");
+                    assert_eq!(spans, vec![0..input.len() as u64]);
+                } else {
+                    assert_eq!(
+                        errors,
+                        vec![ParseError {
+                            kind: ErrorKind::DepthLimitExceeded,
+                            candidate_start: Some(0),
+                            offset: openers[limit],
+                        }]
+                    );
+                    assert!(spans.is_empty());
+                }
+                assert_depth_chunk_invariance(&input, Mode::Single, maximum);
+            }
+        }
+    }
+    // Sequential siblings do not accumulate depth, and scalars add none.
+    for input in [b"[1,2,3,null,true,\"text\"]".as_slice(), b"[[],{},[],{}]"] {
+        let maximum = std::num::NonZeroUsize::new(if input[1] == b'1' { 1 } else { 2 }).unwrap();
+        assert!(
+            parse_with_depth(input, Mode::Single, &[], maximum)
+                .1
+                .is_empty()
+        );
+        assert_depth_chunk_invariance(input, Mode::Single, maximum);
+    }
+}
+
+#[test]
+fn default_depth_is_1000_and_can_be_raised() {
+    assert_eq!(DEFAULT_MAX_DEPTH.get(), 1000);
+    for depth in [999, 1000, 1001] {
+        let (input, _) = nested_containers(depth, "mixed");
+        for cuts in [vec![], (0..=input.len()).collect()] {
+            let (_, errors, spans) = parse(&input, Mode::Single, &cuts);
+            assert_eq!(errors.is_empty(), depth <= 1000);
+            assert_eq!(spans.len(), usize::from(depth <= 1000));
+            let (_, errors, spans) = parse_with_depth(
+                &input,
+                Mode::Single,
+                &cuts,
+                std::num::NonZeroUsize::new(1001).unwrap(),
+            );
+            assert!(errors.is_empty());
+            assert_eq!(spans, vec![0..input.len() as u64]);
+        }
+    }
+}
+
+#[test]
+fn depth_recovery_consumes_rejected_opener_and_resets_for_later_candidates() {
+    let input = b"[[]] {\"ok\":true} []";
+    let maximum = std::num::NonZeroUsize::new(1).unwrap();
+    let (events, errors, spans) = parse_with_depth(input, Mode::Scan, &[], maximum);
+    assert_eq!(
+        errors,
+        vec![ParseError {
+            kind: ErrorKind::DepthLimitExceeded,
+            candidate_start: Some(0),
+            offset: 1,
+        }]
+    );
+    assert_eq!(spans, vec![5..16, 17..19]);
+    assert!(
+        !events
+            .iter()
+            .any(|event| event == "ArrayStart { offset: 1 }")
+    );
+    assert_depth_chunk_invariance(input, Mode::Scan, maximum);
+    let (_, errors, spans) = parse_with_depth(input, Mode::Single, &[], maximum);
+    assert_eq!(errors.len(), 1);
+    assert!(spans.is_empty());
+    assert_depth_chunk_invariance(input, Mode::Single, maximum);
+    // Later openers may be discovered; discard recovery does not skip a document.
+    let (_, errors, spans) = parse_with_depth(b"[[[]]]", Mode::Scan, &[], maximum);
+    assert_eq!(errors.len(), 1);
+    assert_eq!(spans, vec![2..4]);
+}
+
 // Use Rust's encoder as an independent source of common text and boundary cases.
 fn utf8_sequences() -> Vec<(char, Vec<u8>)> {
     [
@@ -283,7 +398,16 @@ fn parse(
     mode: Mode,
     cuts: &[usize],
 ) -> (Vec<String>, Vec<ParseError>, Vec<Range<u64>>) {
-    let mut parser = Parser::new(mode);
+    parse_with_depth(input, mode, cuts, DEFAULT_MAX_DEPTH)
+}
+
+fn parse_with_depth(
+    input: &[u8],
+    mode: Mode,
+    cuts: &[usize],
+    max_depth: std::num::NonZeroUsize,
+) -> (Vec<String>, Vec<ParseError>, Vec<Range<u64>>) {
+    let mut parser = Parser::with_max_depth(mode, max_depth);
     let mut events = Vec::new();
     let mut errors = Vec::new();
     let mut spans = Vec::new();
@@ -314,6 +438,11 @@ fn parse(
 }
 
 fn assert_chunk_invariance(input: &[u8], mode: Mode) {
+    assert_depth_chunk_invariance(input, mode, DEFAULT_MAX_DEPTH);
+}
+
+fn assert_depth_chunk_invariance(input: &[u8], mode: Mode, max_depth: std::num::NonZeroUsize) {
+    let parse = |input: &[u8], mode, cuts: &[usize]| parse_with_depth(input, mode, cuts, max_depth);
     let expected = parse(input, mode, &[]);
     for split in 0..=input.len() {
         assert_eq!(
