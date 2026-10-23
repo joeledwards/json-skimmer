@@ -99,6 +99,8 @@ pub enum ErrorKind {
     UnexpectedByte,
     InvalidEscape,
     InvalidUnicodeEscape,
+    /// Malformed UTF-8 at the offending byte, or an incomplete sequence at EOF.
+    InvalidUtf8,
     ControlCharacterInString,
     InvalidNumber,
     UnexpectedEnd,
@@ -162,6 +164,44 @@ enum LiteralKind {
     Null,
 }
 
+/// Only continuation bounds and a count are retained, never string contents.
+#[derive(Clone, Copy, Debug, Default)]
+struct Utf8State {
+    remaining: u8,
+    minimum: u8,
+    maximum: u8,
+}
+
+impl Utf8State {
+    fn advance(self, byte: u8) -> Option<Self> {
+        if self.remaining > 0 {
+            return (self.minimum..=self.maximum)
+                .contains(&byte)
+                .then_some(Self {
+                    remaining: self.remaining - 1,
+                    minimum: 0x80,
+                    maximum: 0xbf,
+                });
+        }
+        let (remaining, minimum, maximum) = match byte {
+            0x00..=0x7f => (0, 0x80, 0xbf),
+            0xc2..=0xdf => (1, 0x80, 0xbf),
+            0xe0 => (2, 0xa0, 0xbf),
+            0xe1..=0xec | 0xee..=0xef => (2, 0x80, 0xbf),
+            0xed => (2, 0x80, 0x9f),
+            0xf0 => (3, 0x90, 0xbf),
+            0xf1..=0xf3 => (3, 0x80, 0xbf),
+            0xf4 => (3, 0x80, 0x8f),
+            _ => return None,
+        };
+        Some(Self {
+            remaining,
+            minimum,
+            maximum,
+        })
+    }
+}
+
 impl LiteralKind {
     fn bytes(self) -> &'static [u8] {
         match self {
@@ -181,6 +221,7 @@ pub struct Parser {
     root_kind: Option<ContainerKind>,
     stack: Vec<Frame>,
     token: Option<Token>,
+    utf8: Utf8State,
     completed_single: bool,
     terminal: bool,
 }
@@ -200,6 +241,7 @@ impl Parser {
             root_kind: None,
             stack: Vec::new(),
             token: None,
+            utf8: Utf8State::default(),
             completed_single: false,
             terminal: false,
         }
@@ -242,7 +284,12 @@ impl Parser {
             self.value_complete();
         }
         if self.candidate_start.is_some() {
-            self.invalidate(ErrorKind::UnexpectedEnd, self.offset, &mut emit);
+            let kind = if self.utf8.remaining > 0 {
+                ErrorKind::InvalidUtf8
+            } else {
+                ErrorKind::UnexpectedEnd
+            };
+            self.invalidate(kind, self.offset, &mut emit);
         } else if self.mode == Mode::Single && !self.completed_single {
             self.fail_single(ErrorKind::ExpectedSingleValue, self.offset, &mut emit);
         }
@@ -270,7 +317,18 @@ impl Parser {
                     escape,
                     unicode_left,
                 } => {
-                    if unicode_left > 0 {
+                    if self.utf8.remaining > 0 {
+                        if let Some(next) = self.utf8.advance(byte) {
+                            self.utf8 = next;
+                            emit(Event::StringFragment {
+                                kind,
+                                bytes: fragment,
+                                offset: at,
+                            });
+                        } else {
+                            self.invalidate(ErrorKind::InvalidUtf8, at, emit);
+                        }
+                    } else if unicode_left > 0 {
                         if !byte.is_ascii_hexdigit() {
                             self.invalidate(ErrorKind::InvalidUnicodeEscape, at, emit);
                         } else {
@@ -321,12 +379,15 @@ impl Parser {
                         });
                     } else if byte < 0x20 {
                         self.invalidate(ErrorKind::ControlCharacterInString, at, emit);
-                    } else {
+                    } else if let Some(next) = self.utf8.advance(byte) {
+                        self.utf8 = next;
                         emit(Event::StringFragment {
                             kind,
                             bytes: fragment,
                             offset: at,
                         });
+                    } else {
+                        self.invalidate(ErrorKind::InvalidUtf8, at, emit);
                     }
                 }
                 Token::Number(state) => {
@@ -613,6 +674,7 @@ impl Parser {
         self.stack.clear();
         self.token = None;
         self.candidate_start = None;
+        self.utf8 = Utf8State::default();
         self.root_kind = None;
         if self.mode == Mode::Single {
             self.terminal = true;
@@ -760,3 +822,6 @@ mod tests {
         assert_eq!(errors, vec![ErrorKind::UnexpectedEnd]);
     }
 }
+
+#[cfg(test)]
+mod contract_tests;

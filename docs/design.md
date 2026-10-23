@@ -139,6 +139,16 @@ string escaping, number syntax, separators, and nesting. Errors carry absolute
 byte offsets. Candidate completion carries the half-open byte span of the root
 container.
 
+Raw UTF-8 in keys and string values is validated incrementally without buffering
+whole code points or tokens. `InvalidUtf8` reports the absolute offset of the
+byte that violates UTF-8 encoding, including a quote or escape where a
+continuation was required. An unfinished sequence at EOF reports `InvalidUtf8`
+at the EOF offset. Overlong encodings, encoded surrogate code points, and code
+points above U+10FFFF are rejected. This validation does not change JSON
+`\uXXXX` escape handling. Raw fragments remain speculative and may include a
+valid prefix of a sequence later found to be invalid. Outside candidates, scan
+mode continues to ignore arbitrary bytes.
+
 Raw fragments borrow from the input passed to the current parser call. A
 consumer must copy a fragment if it needs the bytes after the callback returns.
 

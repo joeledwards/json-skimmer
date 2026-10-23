@@ -10,7 +10,7 @@ FLON use case unless they are part of the promised public API.
 
 ## Priority follow-up from project review
 
-- [ ] Validate UTF-8 incrementally across chunk boundaries and reject invalid
+- [x] Validate UTF-8 incrementally across chunk boundaries and reject invalid
       sequences before emitting `CandidateEnd`; confirmed FLON output depends
       on this validity guarantee.
 - [ ] Add configurable nesting limits with documented defaults and recovery
@@ -44,7 +44,7 @@ by the initial unit tests in the current development environment:
 
 - [x] Compile the crate and resolve all diagnostics
 - [x] Apply `rustfmt` and pass `clippy`
-- [ ] Validate UTF-8 incrementally across chunk boundaries
+- [x] Validate UTF-8 incrementally across chunk boundaries
 - [ ] Coalesce contiguous string and number fragments within each input chunk
 - [ ] Add configurable nesting and candidate-span limits
 - [ ] Make parser completion and post-completion behavior explicit
