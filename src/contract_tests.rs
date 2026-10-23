@@ -802,3 +802,176 @@ fn candidate_limit_recovery_consumes_offender_resets_and_freezes_single_mode() {
     );
     assert_eq!(errors[0].kind, ErrorKind::CandidateLimitExceeded);
 }
+
+#[test]
+fn fragments_borrow_contiguous_runs_and_flush_before_errors() {
+    for input in [
+        br#"{"long-key":"a\n\u1234","n":-12.34e+56}"#.as_slice(),
+        "[\"雪😀\",12345]".as_bytes(),
+        br#"["unfinished\u12"#,
+        br#"["good\q"] {}"#,
+        b"[12345x] []",
+        b"[\"valid\xe2\x82x] {}",
+    ] {
+        for split in 0..=input.len() {
+            let mut parser = Parser::new(Mode::Scan);
+            let mut events = Vec::new();
+            for chunk in [&input[..split], &input[split..]] {
+                let base = parser.offset();
+                let mut previous_fragment = None;
+                parser.push(chunk, |event| {
+                    let fragment = match &event {
+                        Event::StringFragment {
+                            kind,
+                            bytes,
+                            offset,
+                        } => Some((Some(*kind), *bytes, *offset)),
+                        Event::NumberFragment { bytes, offset } => Some((None, *bytes, *offset)),
+                        _ => None,
+                    };
+                    if let Some((kind, bytes, offset)) = fragment {
+                        assert!(!bytes.is_empty());
+                        let start = (offset - base) as usize;
+                        assert_eq!(bytes.as_ptr(), chunk[start..].as_ptr());
+                        assert_eq!(bytes, &chunk[start..start + bytes.len()]);
+                        assert_ne!(
+                            previous_fragment,
+                            Some((kind, offset)),
+                            "adjacent fragments were not coalesced"
+                        );
+                        previous_fragment = Some((kind, offset + bytes.len() as u64));
+                    } else {
+                        previous_fragment = None;
+                    }
+                    record(&mut events, event);
+                });
+            }
+            parser.finish(|event| record(&mut events, event));
+            assert_eq!(events, parse(input, Mode::Scan, &[]).0);
+        }
+        assert_chunk_invariance(input, Mode::Scan);
+    }
+}
+
+#[test]
+fn offset_exhaustion_is_terminal_without_consuming_unrepresentable_bytes() {
+    for mode in [Mode::Scan, Mode::Single] {
+        for prefix in [b"".as_slice(), b"[", b"[\"abc", b"[123"] {
+            for split in 0..=3 {
+                let mut parser = Parser::new(mode);
+                // Reaching the boundary naturally would require exabytes. Seed
+                // only the counter, then exercise normal public parsing/lifecycle.
+                parser.offset = u64::MAX - prefix.len() as u64 - 1;
+                parser.push(prefix, |_| {});
+                let mut errors = Vec::new();
+                for chunk in [&b"   "[..split], &b"   "[split..]] {
+                    parser.push(chunk, |event| {
+                        if let Event::Invalid(error) = event {
+                            errors.push(error);
+                        }
+                    });
+                }
+                assert_eq!(parser.offset(), u64::MAX);
+                assert_eq!(errors.len(), 1, "{mode:?} {prefix:?} split={split}");
+                assert_eq!(format!("{:?}", errors[0].kind), "OffsetOverflow");
+                assert_eq!(errors[0].offset, u64::MAX);
+                parser.push(b"{}", |event| panic!("event after overflow: {event:?}"));
+                parser.finish(|event| panic!("finish after overflow: {event:?}"));
+                assert_eq!(parser.offset(), u64::MAX);
+            }
+        }
+    }
+}
+
+#[test]
+fn lexical_states_reject_every_non_json_transition_and_truncation() {
+    // Each prefix ends in a distinct unfinished lexical or structural state.
+    for input in [
+        b"{".as_slice(),
+        b"{\"key",
+        b"{\"k\"",
+        b"{\"k\":",
+        b"{\"k\":0,",
+        b"[",
+        b"[0,",
+        b"[-",
+        b"[0.",
+        b"[1e",
+        b"[1e+",
+        b"[1e-",
+        b"[t",
+        b"[tr",
+        b"[tru",
+        b"[f",
+        b"[fa",
+        b"[fal",
+        b"[fals",
+        b"[n",
+        b"[nu",
+        b"[nul",
+        b"[\"",
+        b"[\"\\",
+        br#"["\u"#,
+        br#"["\u0"#,
+        br#"["\u00"#,
+        br#"["\u000"#,
+    ] {
+        assert_eq!(
+            parse(input, Mode::Single, &[]).1[0].kind,
+            ErrorKind::UnexpectedEnd,
+            "{input:?}"
+        );
+        assert_chunk_invariance(input, Mode::Single);
+    }
+    for byte in 0..=u8::MAX {
+        if !b"\"\\/bfnrtu".contains(&byte) {
+            let input = [b"[\"\\".as_slice(), &[byte], b"\"]"].concat();
+            assert_eq!(
+                parse(&input, Mode::Single, &[]).1[0].kind,
+                ErrorKind::InvalidEscape
+            );
+            assert_chunk_invariance(&input, Mode::Single);
+        }
+        if !byte.is_ascii_hexdigit() {
+            for prefix in [
+                br#"["\u"#.as_slice(),
+                br#"["\u1"#,
+                br#"["\u12"#,
+                br#"["\u123"#,
+            ] {
+                let input = [prefix, &[byte], b"0000\"]"].concat();
+                assert_eq!(
+                    parse(&input, Mode::Single, &[]).1[0].kind,
+                    ErrorKind::InvalidUnicodeEscape
+                );
+                assert_chunk_invariance(&input, Mode::Single);
+            }
+        }
+    }
+    for input in [
+        b"[+1]".as_slice(),
+        b"[.1]",
+        b"[--1]",
+        b"[00]",
+        b"[-01]",
+        b"[1.e1]",
+        b"[1e.]",
+        b"[1e+-1]",
+        b"[1e1.0]",
+        b"[1x]",
+        b"[True]",
+        b"[NULL]",
+        b"[truex]",
+        b"{1:0}",
+        b"{\"k\"::0}",
+        b"{\"k\":}",
+        b"{\"k\":0 \"b\":1}",
+        b"[,]",
+        b"[0,,1]",
+        b"[0}",
+        b"{\"k\":0]",
+    ] {
+        assert!(!parse(input, Mode::Single, &[]).1.is_empty(), "{input:?}");
+        assert_chunk_invariance(input, Mode::Single);
+    }
+}

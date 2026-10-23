@@ -109,6 +109,9 @@ pub enum ErrorKind {
     DepthLimitExceeded,
     /// The next raw byte would exceed the configured candidate span limit.
     CandidateLimitExceeded,
+    /// No further byte can be consumed without overflowing the absolute offset.
+    /// Terminal in both modes; the byte at `u64::MAX` is not consumed.
+    OffsetOverflow,
     ControlCharacterInString,
     InvalidNumber,
     UnexpectedEnd,
@@ -289,10 +292,66 @@ impl Parser {
     /// After [`Self::finish`] or a terminal error, this is a no-op: no events
     /// are emitted and [`Self::offset`] remains unchanged.
     pub fn push<'a>(&mut self, input: &'a [u8], mut emit: impl FnMut(Event<'a>)) {
+        let base = self.offset;
+        let mut pending = None;
+        self.push_bytes(input, |event| {
+            // Keep only a borrowed slice, never an owned token buffer. Structural
+            // events and failures flush the validated prefix before delivery.
+            match (&mut pending, &event) {
+                (
+                    Some(Event::StringFragment {
+                        kind,
+                        bytes,
+                        offset,
+                    }),
+                    Event::StringFragment {
+                        kind: next_kind,
+                        bytes: next,
+                        offset: at,
+                    },
+                ) if kind == next_kind && *offset + bytes.len() as u64 == *at => {
+                    *bytes = &input[(*offset - base) as usize..(*at - base) as usize + next.len()];
+                    return;
+                }
+                (
+                    Some(Event::NumberFragment { bytes, offset }),
+                    Event::NumberFragment {
+                        bytes: next,
+                        offset: at,
+                    },
+                ) if *offset + bytes.len() as u64 == *at => {
+                    *bytes = &input[(*offset - base) as usize..(*at - base) as usize + next.len()];
+                    return;
+                }
+                _ => {}
+            }
+            if let Some(previous) = pending.take() {
+                emit(previous);
+            }
+            if matches!(
+                event,
+                Event::StringFragment { .. } | Event::NumberFragment { .. }
+            ) {
+                pending = Some(event);
+            } else {
+                emit(event);
+            }
+        });
+        if let Some(event) = pending {
+            emit(event);
+        }
+    }
+
+    fn push_bytes<'a>(&mut self, input: &'a [u8], mut emit: impl FnMut(Event<'a>)) {
         if self.terminal {
             return;
         }
         for (index, &byte) in input.iter().enumerate() {
+            if self.offset == u64::MAX {
+                self.invalidate(ErrorKind::OffsetOverflow, self.offset, &mut emit);
+                self.terminal = true;
+                break;
+            }
             let absolute = self.offset;
             let fragment = &input[index..index + 1];
             let was_active = self.candidate_start.is_some();
