@@ -2,16 +2,18 @@
 
 ## Release sequence and scope
 
-Target coordinated **1.0.0 releases** of `json-skimmer` and FLON once both core
-checklists are complete. Publish `json-skimmer` first, then FLON against that
-published dependency. There are no calendar deadlines or required interim 0.x
-releases. Publishing and other external actions remain developer-controlled.
+Publish initial **0.1.0 releases** to establish the crate names and make the
+implemented streaming core available. Publish json-skimmer first, then FLON
+against json-skimmer 0.1.0. json-volcano 1.0.0 is already published and is a
+registry development dependency in both consumers, with CLI features disabled.
+See [release instructions](docs/releasing.md) for checks, publication order and
+known pre-1.0 limitations. External checks and publication remain developer-run.
 
-The first release stabilizes the raw incremental event parser. Convenience
-adapters are later work, not 1.0 blockers. See the [FLON release roadmap](../flon/ROADMAP.md),
-[design](docs/design.md), and [FLON acceptance requirements](docs/flon-requirements.md).
-Update these checklists and the coverage matrix as work lands. A checked item
-means implemented/verified behavior, not merely a design proposal.
+The 1.0 checklists below remain the stability target, rather than a claim that
+0.1 has passed every 1.0 acceptance gate. Parser decoding/path convenience
+adapters are later work, not prerequisites for either initial release. FLON
+already consumes only public raw parser events. Checked items represent
+implemented/verified work; pending tests and audits stay unchecked.
 
 ## 1.0.0 — core parser
 
@@ -50,7 +52,7 @@ means implemented/verified behavior, not merely a design proposal.
 - [ ] Review public API stability and unsafe-code usage; check that later
       adapters can be added without changing the core event contract
 - [ ] Establish and test a minimum supported Rust version
-- [ ] Complete metadata, licensing files, and crates.io documentation
+- [x] Complete metadata, licensing files, and initial crate documentation
 - [ ] Run final unit, documentation, formatting, lint, and authorized release checks
 - [ ] Publish `json-skimmer` 1.0.0, then allow FLON to use the published dependency
 

@@ -27,9 +27,10 @@ in the README and public API. See the release roadmap and coverage matrices.
 
 ## Coordinated release boundary
 
-The initial releases are coordinated 1.0.0 versions: finish and stabilize both
-cores, publish `json-skimmer` first, then FLON using that published dependency.
-No interim 0.x release is required. Parser 1.0 stabilizes raw events, strict/scan
+The initial releases are coordinated 0.1.0 versions: publish `json-skimmer`
+first, then FLON using that published dependency. These pre-1.0 releases ship
+the implemented core; the stability and validation gates below remain open
+for 1.0. Parser 1.0 stabilizes raw events, strict/scan
 modes, discard recovery, resource limits, lifecycle/offset/error contracts, and
 usable documentation. Runnable examples, independent correctness comparisons,
 fuzzing, benchmarks, and API/package review are release gates.
@@ -92,7 +93,7 @@ The Rust FLON project, rather than `json-skimmer`, owns:
 - optional terminal colors for paths, indexes, strings, numbers, booleans, and
   null;
 - reading stdin or a selected file;
-- optional URL input and TLS policy;
+- stdin integration with external URL-fetching tools;
 - buffered versus immediate output;
 - elapsed-time summaries;
 - CLI arguments, environment configuration, diagnostics, and broken-pipe
@@ -116,7 +117,7 @@ Application concerns can use the Rust standard library or established crates:
 - `BufWriter` for output buffering and `Instant` for timing;
 - a maintained argument parser for the CLI;
 - a maintained ANSI styling crate for terminal color and TTY detection; and
-- a maintained HTTP client if URL input remains a requirement.
+- external tools such as curl for URL fetching; built-in HTTP is out of scope.
 
 A Rust equivalent of `@buzuli/color` may eventually be worthwhile as a separate
 utility if multiple Rust applications need the same palette and environment

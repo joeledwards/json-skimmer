@@ -1,7 +1,7 @@
 # Test coverage
 
-Update this matrix when public behavior changes. Tests live in `src/lib.rs`
-`src/contract_tests.rs`, and `src/generated_tests.rs` and use public parser
+Update this matrix when public behavior changes. Tests live in `src/lib.rs`,
+`src/contract_tests.rs`, `src/generated_tests.rs`, and `src/volcano_tests.rs` and use public parser
 events and methods.
 
 | Behavior | Coverage | Remaining gaps |
@@ -9,7 +9,7 @@ events and methods.
 | Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans; generated trees with independent semantic-event traversal | Exhaustive lexical transitions; decoded adapters |
 | Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets | Expand cases with each bug fix; external reference-parser comparison |
 | Chunk independence | Whole input, every two-chunk split, one-byte chunks, eight deterministic random partitions; normalized fragments | More complex generated documents |
-| Recovery | Malformed candidates, conflicting opener, arbitrary leading byte; absolute spans and offsets | Depth-limit recovery, including consuming the rejected opener |
+| Recovery | Malformed candidates, conflicting opener, arbitrary leading byte; absolute spans and offsets; depth-limit recovery consumes the rejected opener and resets for later candidates across chunk divisions | Broader generated recovery corpus |
 | Strict mode | Missing roots, scalar roots, trailing data, frozen terminal offsets independent of chunk divisions | Broader generated strict-mode corpus |
 | Completion | Final/idempotent finish on valid, empty, incomplete, and invalid streams in both modes; no post-close callbacks or offset changes; EOF event ordering; terminal UTF-8, syntax, and depth errors | Broader generated lifecycle sequences |
 | UTF-8 | Boundary/common-text generators; all 256 replacements at each continuation position compared with Rust UTF-8 validation; every incomplete prefix at quote/EOF; mixed scripts, emoji, combining characters, escapes, raw fragment preservation, repeated recovery; keys and values | Broader arbitrary-byte/property corpus; exhaustive Unicode scalar coverage |
@@ -59,10 +59,11 @@ Run just these properties from this repository:
 
 ## Companion generator
 
-Generation contracts and tests belong to the independent sibling
-[json-volcano project](../../json-volcano/README.md), which exposes both a
-library and optional CLI. See its [coverage matrix](../../json-volcano/docs/test-coverage.md).
-Generator tests are run from that project, not this parser's Cargo workspace.
+Generation contracts and tests belong to the independently published
+[json-volcano project](https://crates.io/crates/json-volcano), which exposes
+both a library and optional CLI. Its library is a registry development
+dependency with default features disabled; no sibling checkout is required.
+Generator tests belong to that project, not this parser's Cargo workspace.
 
 Published json-volcano 1.0 fixtures are tested in `src/volcano_tests.rs`: both
 shapes, valid/invalid/mixed/truncated lifecycles, candidate counts, EOF errors,

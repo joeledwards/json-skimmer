@@ -12,3 +12,5 @@ dependencies = [
 [[package]]
 name = "json-volcano"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae8b6db80fad4e6ff4f9d24a3d364225dab233737e1886c0aa400ba74561275d"

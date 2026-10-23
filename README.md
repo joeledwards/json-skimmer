@@ -46,11 +46,12 @@ trailing data. Scan-mode recoverable errors also leave the parser open until
 
 ## Companion JSON generator
 
-[json-volcano](https://crates.io/crates/json-volcano) is an independent sibling project
-with a programmable generator and optional CLI for exact-size seeded fixtures.
-It is not part of json-skimmer or its Cargo workspace. Its published 1.0 library is used as a development dependency for bounded
-valid/invalid/mixed/truncated fixture tests, without adding runtime dependencies
-to the parser. Existing independent tree-generated tests remain in place.
+[json-volcano 1.0](https://crates.io/crates/json-volcano) provides programmable,
+exact-size seeded fixtures. Its published library is a development dependency
+with `default-features = false`, so Clap and generator code are not parser
+runtime dependencies. Tests cover valid/invalid/mixed/truncated input, root
+shapes, depths, sizes and chunk divisions. Independent tree-generated tests
+remain in place. No sibling generator checkout or Cargo patch is required.
 
 ## Project documents
 
@@ -65,8 +66,9 @@ to the parser. Existing independent tree-generated tests remain in place.
 
 ## Release plan
 
-The target is a coordinated 1.0.0 release with FLON.
-The parser publishes first, then FLON uses that published dependency. Core
-features and release gates are tracked in [the release roadmap](ROADMAP.md);
-convenience features are candidates for later 1.x releases, with breaking
-changes reviewed for 2.0. No release dates are assigned.
+Publish initial **0.1.0** releases, json-skimmer first and FLON second. This
+makes the current streaming core available while its APIs are still pre-1.0.
+The 1.0 stability and validation gates remain tracked in the [roadmap](ROADMAP.md).
+See [release instructions](docs/releasing.md) for package checks, publication
+order and remaining limitations. Convenience adapters are later 1.x candidates;
+no release dates are assigned.
