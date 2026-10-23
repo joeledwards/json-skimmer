@@ -13,7 +13,8 @@ events and methods.
 | Strict mode | Missing roots, scalar roots, trailing data, frozen terminal offsets independent of chunk divisions | Broader generated strict-mode corpus |
 | Completion | Final/idempotent finish on valid, empty, incomplete, and invalid streams in both modes; no post-close callbacks or offset changes; EOF event ordering; terminal UTF-8, syntax, and depth errors | Broader generated lifecycle sequences |
 | UTF-8 | Boundary/common-text generators; all 256 replacements at each continuation position compared with Rust UTF-8 validation; every incomplete prefix at quote/EOF; mixed scripts, emoji, combining characters, escapes, raw fragment preservation, repeated recovery; keys and values | Broader arbitrary-byte/property corpus; exhaustive Unicode scalar coverage |
-| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Candidate-span limits; overflow policy; external reference-parser comparison and fuzzing |
+| Candidate spans | Exact and one-byte-over boundaries, every truncation prefix of UTF-8/escape/number/literal/nested inputs, invalid input, strict/scan recovery, absolute offsets and frozen lifecycle, per-candidate reset, offending-opener consumption, size/depth precedence; whole/every two-chunk split/one-byte input with normalized events | Counter/absolute-offset overflow audit |
+| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Overflow policy; external reference-parser comparison and fuzzing |
 
 Run lightweight unit tests from this repository:
 

@@ -472,7 +472,17 @@ fn parse_with_depth(
     cuts: &[usize],
     max_depth: std::num::NonZeroUsize,
 ) -> (Vec<String>, Vec<ParseError>, Vec<Range<u64>>) {
-    let mut parser = Parser::with_max_depth(mode, max_depth);
+    parse_with_limits(input, mode, cuts, max_depth, None)
+}
+
+fn parse_with_limits(
+    input: &[u8],
+    mode: Mode,
+    cuts: &[usize],
+    max_depth: std::num::NonZeroUsize,
+    maximum: Option<std::num::NonZeroU64>,
+) -> (Vec<String>, Vec<ParseError>, Vec<Range<u64>>) {
+    let mut parser = Parser::with_limits(mode, max_depth, maximum);
     let mut events = Vec::new();
     let mut errors = Vec::new();
     let mut spans = Vec::new();
@@ -650,4 +660,145 @@ fn single_mode_rejects_missing_roots_and_trailing_data() {
         );
         assert_chunk_invariance(input, Mode::Single);
     }
+}
+
+#[test]
+fn candidate_byte_limits_are_exact_and_chunk_independent() {
+    let cases: &[&[u8]] = &[
+        b"{}",
+        b"[ ]",
+        br#"[1.25e+3]"#,
+        br#"{"key":"a\u1234\n"}"#,
+        "{\"雪\":\"😀\"}".as_bytes(),
+        b"[true,false,null]",
+        b"[[]]",
+        b"[1,]",
+        b"[\"\xff\"]",
+        br#"["\uXX"]"#,
+    ];
+    for &input in cases {
+        for end in 0..=input.len() {
+            let input = &input[..end]; // Every truncated prefix, including UTF-8 and escapes.
+            for limit in 1..=input.len() as u64 + 1 {
+                for mode in [Mode::Scan, Mode::Single] {
+                    let maximum = std::num::NonZeroU64::new(limit);
+                    let parse = |cuts: &[usize]| {
+                        parse_with_limits(input, mode, cuts, DEFAULT_MAX_DEPTH, maximum)
+                    };
+                    let expected = parse(&[]);
+                    for split in 0..=input.len() {
+                        assert_eq!(parse(&[split]), expected);
+                    }
+                    assert_eq!(parse(&(0..=input.len()).collect::<Vec<_>>()), expected);
+                    if let Some(error) = expected.1.first() {
+                        assert!(error.offset <= limit);
+                        if error.kind == ErrorKind::CandidateLimitExceeded {
+                            assert_eq!(error.offset, limit);
+                            assert_eq!(error.candidate_start, Some(0));
+                            assert!(expected.2.is_empty());
+                        }
+                    }
+                }
+            }
+        }
+        let (_, errors, spans) = parse_with_limits(
+            input,
+            Mode::Single,
+            &[],
+            DEFAULT_MAX_DEPTH,
+            std::num::NonZeroU64::new(input.len() as u64),
+        );
+        if ![b"[1,]".as_slice(), b"[\"\xff\"]", br#"["\uXX"]"#].contains(&input) {
+            assert!(errors.is_empty());
+            assert_eq!(spans, vec![0..input.len() as u64]);
+            let (_, errors, spans) = parse_with_limits(
+                input,
+                Mode::Single,
+                &[],
+                DEFAULT_MAX_DEPTH,
+                std::num::NonZeroU64::new(input.len() as u64 - 1),
+            );
+            assert_eq!(
+                errors,
+                vec![ParseError {
+                    kind: ErrorKind::CandidateLimitExceeded,
+                    candidate_start: Some(0),
+                    offset: input.len() as u64 - 1,
+                }]
+            );
+            assert!(spans.is_empty());
+        }
+    }
+}
+
+#[test]
+fn candidate_limit_recovery_consumes_offender_resets_and_freezes_single_mode() {
+    let input = b"junk [  {] {} []";
+    for mode in [Mode::Scan, Mode::Single] {
+        let input = if mode == Mode::Scan {
+            input.as_slice()
+        } else {
+            &input[5..]
+        };
+        for split in 0..=input.len() {
+            let mut parser =
+                Parser::with_limits(mode, DEFAULT_MAX_DEPTH, std::num::NonZeroU64::new(3));
+            let mut errors = Vec::new();
+            let mut spans = Vec::new();
+            let mut starts = Vec::new();
+            for chunk in [&input[..split], &input[split..]] {
+                parser.push(chunk, |event| match event {
+                    Event::Invalid(error) => errors.push(error),
+                    Event::CandidateStart { offset, .. } => starts.push(offset),
+                    Event::CandidateEnd { span, .. } => spans.push(span),
+                    _ => {}
+                });
+            }
+            let start = if mode == Mode::Scan { 5 } else { 0 };
+            assert_eq!(
+                errors,
+                vec![ParseError {
+                    kind: ErrorKind::CandidateLimitExceeded,
+                    candidate_start: Some(start),
+                    offset: start + 3
+                }]
+            );
+            if mode == Mode::Scan {
+                assert_eq!(starts, vec![5, 11, 14]); // Offending '{' at 8 is consumed.
+                assert_eq!(spans, vec![11..13, 14..16]);
+            } else {
+                assert_eq!(starts, vec![0]);
+                assert!(spans.is_empty());
+                assert_eq!(parser.offset(), 4);
+            }
+            parser.finish(|_| panic!("unexpected EOF event"));
+            let offset = parser.offset();
+            parser.finish(|_| panic!("duplicate EOF event"));
+            parser.push(b"[]", |_| panic!("resumed closed parser"));
+            assert_eq!(parser.offset(), offset);
+        }
+    }
+    // At the exact limit, unfinished tokens keep their EOF diagnosis.
+    for (input, kind) in [
+        (b"[1".as_slice(), ErrorKind::UnexpectedEnd),
+        (b"[\"\xe2", ErrorKind::InvalidUtf8),
+    ] {
+        let (_, errors, _) = parse_with_limits(
+            input,
+            Mode::Single,
+            &[],
+            DEFAULT_MAX_DEPTH,
+            std::num::NonZeroU64::new(input.len() as u64),
+        );
+        assert_eq!(errors[0].kind, kind);
+    }
+    // Size checking wins over depth and syntax checking on the rejected byte.
+    let (_, errors, _) = parse_with_limits(
+        b"[[]]",
+        Mode::Single,
+        &[],
+        std::num::NonZeroUsize::new(1).unwrap(),
+        std::num::NonZeroU64::new(1),
+    );
+    assert_eq!(errors[0].kind, ErrorKind::CandidateLimitExceeded);
 }

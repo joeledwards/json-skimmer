@@ -21,8 +21,8 @@ ports the distinct active Node fixtures and adds Rust-specific cases.
 
 `json-skimmer` currently provides raw speculative events, validated UTF-8 and
 JSON escapes, original number text, structured errors, strict/scan modes, and a
-configurable depth limit (default 1,000). Candidate-span limits and broader
-release validation remain open. Completion is final and idempotent, as documented
+configurable depth limit (default 1,000). Candidate-span limits are implemented;
+broader release validation remains open. Completion is final and idempotent, as documented
 in the README and public API. See the release roadmap and coverage matrices.
 
 ## Coordinated release boundary

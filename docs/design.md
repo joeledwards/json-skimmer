@@ -224,3 +224,22 @@ by `finish()`. This result is independent of chunk divisions. Candidate
 completion alone is not final: scan mode can find subsequent candidates, and
 single mode continues checking trailing whitespace/data until EOF. Recoverable
 scan-mode errors do not close the parser.
+
+
+### Candidate span limit
+
+`Parser::with_limits(mode, max_depth, max_candidate_bytes)` accepts an optional
+positive `NonZeroU64` raw-byte bound. Existing constructors use no candidate bound.
+The span includes the root opener and closer, whitespace, raw escapes, and UTF-8
+bytes. Leading/trailing junk or whitespace outside the root is excluded.
+
+Before processing a byte of an active candidate, its zero-based offset from the
+root is compared with the limit. At or beyond the bound, the parser emits
+`CandidateLimitExceeded` with that byte's absolute offset and candidate start,
+clears candidate/token/UTF-8 state, and consumes the offending byte without any
+syntax, token, or opening events for it. This check wins over other errors on
+that byte. Scan mode resumes at the next byte without reconsidering an offending
+opener; single mode freezes after consuming it. Later nested openers can still
+be discovered under the existing discard-recovery policy. Each candidate gets
+an independent bound. EOF at the bound uses normal truncation/UTF-8 errors.
+No document buffering or growing per-byte counters are introduced.

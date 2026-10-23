@@ -12,6 +12,18 @@ depth one. Use `Parser::with_max_depth(mode, NonZeroUsize)` to select a positive
 custom limit. Exceeding it emits `DepthLimitExceeded` before the rejected
 container opens.
 
+Use `Parser::with_limits(mode, max_depth, Option<NonZeroU64>)` to also bound raw
+input bytes per candidate. `None` means unlimited and is the default for existing
+constructors. Counting includes the root delimiters, internal whitespace, raw
+escapes, and UTF-8 bytes, excluding surrounding text. Exactly the configured
+number of bytes is allowed. Before parsing the first excess byte, the parser
+emits `CandidateLimitExceeded` at that byte's absolute offset, with the original
+candidate start. That byte is consumed, including if it is an opener. Scan mode
+resumes at the following byte; single mode becomes terminal. The bound resets
+for every candidate. Size checks take precedence over syntax, UTF-8, and depth
+checks on the excess byte. EOF consumes no byte, so an unfinished candidate
+exactly at the limit retains its normal EOF error.
+
 ## Parser lifecycle
 
 Call `push()` for each input chunk, then call `finish()` once at EOF. `finish()`

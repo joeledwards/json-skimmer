@@ -4,7 +4,7 @@
 //! token fragments are delivered to a callback before `push` returns, allowing
 //! the parser to remain independent of the size of the input document.
 
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::Range;
 
 /// Maximum simultaneous open containers by default; the root has depth one.
@@ -107,6 +107,8 @@ pub enum ErrorKind {
     InvalidUtf8,
     /// Opening another container would exceed the configured maximum depth.
     DepthLimitExceeded,
+    /// The next raw byte would exceed the configured candidate span limit.
+    CandidateLimitExceeded,
     ControlCharacterInString,
     InvalidNumber,
     UnexpectedEnd,
@@ -223,6 +225,7 @@ impl LiteralKind {
 pub struct Parser {
     mode: Mode,
     max_depth: NonZeroUsize,
+    max_candidate_bytes: Option<NonZeroU64>,
     offset: u64,
     candidate_start: Option<u64>,
     root_kind: Option<ContainerKind>,
@@ -247,9 +250,23 @@ impl Parser {
     /// Sets a positive container-depth limit. The root counts as depth one.
     /// A rejected opener is consumed; scan mode resumes at the following byte.
     pub fn with_max_depth(mode: Mode, max_depth: NonZeroUsize) -> Self {
+        Self::with_limits(mode, max_depth, None)
+    }
+
+    /// Configures depth and optional raw candidate-byte limits (unlimited by default).
+    /// Bytes count from the root opener through its closing delimiter, including
+    /// whitespace, escapes, and UTF-8 bytes. The first byte beyond the limit is
+    /// consumed without parsing it; scan mode resumes at the following byte.
+    /// EOF at the limit in an unfinished candidate reports its ordinary EOF error.
+    pub fn with_limits(
+        mode: Mode,
+        max_depth: NonZeroUsize,
+        max_candidate_bytes: Option<NonZeroU64>,
+    ) -> Self {
         Self {
             mode,
             max_depth,
+            max_candidate_bytes,
             offset: 0,
             candidate_start: None,
             root_kind: None,
@@ -279,6 +296,17 @@ impl Parser {
             let absolute = self.offset;
             let fragment = &input[index..index + 1];
             let was_active = self.candidate_start.is_some();
+            if self.candidate_start.is_some_and(|start| {
+                self.max_candidate_bytes
+                    .is_some_and(|limit| absolute - start >= limit.get())
+            }) {
+                self.invalidate(ErrorKind::CandidateLimitExceeded, absolute, &mut emit);
+                self.offset += 1;
+                if self.terminal {
+                    break;
+                }
+                continue;
+            }
             let mut depth_exceeded = false;
             self.process(byte, fragment, absolute, &mut |event| {
                 depth_exceeded |= matches!(&event, Event::Invalid(error) if error.kind == ErrorKind::DepthLimitExceeded);

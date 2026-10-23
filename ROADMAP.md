@@ -26,7 +26,7 @@ means implemented/verified behavior, not merely a design proposal.
 - [x] Final/idempotent EOF, terminal errors, and frozen-offset semantics
 - [ ] Coalesce contiguous string and number fragments within each input chunk;
       preserve semantics without promising particular fragment sizes
-- [ ] Add configurable candidate-span limits with documented counting,
+- [x] Add configurable candidate-span limits with documented counting,
       boundary, and recovery behavior
 - [ ] Audit offset/counter overflow and define explicit failure behavior
 - [ ] Finish systematic grammar coverage for escapes, number states, literals,
