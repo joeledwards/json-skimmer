@@ -6,6 +6,7 @@ events and methods.
 
 | Behavior | Coverage | Remaining gaps |
 | --- | --- | --- |
+| Measurement consumer | `examples/measure.rs`: valid/invalid/truncated inputs, UTF-8/escapes/numbers, whole/every split/one-byte normalized counters and read failures; workspace Python summary tests | Actual throughput/RSS developer-run; allocation/deep/long-lived measurements remain open |
 | Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans; generated trees with independent semantic-event traversal | Decoded adapters (outside core scope) |
 | Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets; every invalid escape byte and hex position, incomplete lexical/structural states, number/separator/mismatched-delimiter cases across chunks | Expand cases with each bug fix; external reference-parser comparison |
 | Fragment delivery | Borrowed contiguous runs within each chunk; valid/invalid/truncated strings, UTF-8, escapes and numbers; flush-before-error/recovery and every split; normalized whole/split/one-byte corpus | Performance measurements |

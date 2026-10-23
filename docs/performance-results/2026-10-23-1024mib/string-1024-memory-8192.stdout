@@ -1,0 +1,3 @@
+{"iteration":1,"elapsed_ns":6906357959,"input_bytes":1073741824,"token_bytes":1073736704,"candidates":1024}
+{"iteration":2,"elapsed_ns":6848648979,"input_bytes":1073741824,"token_bytes":1073736704,"candidates":1024}
+{"iteration":3,"elapsed_ns":6930596610,"input_bytes":1073741824,"token_bytes":1073736704,"candidates":1024}

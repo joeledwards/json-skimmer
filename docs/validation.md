@@ -94,5 +94,5 @@ Rust 1.99.1. The developer also passed FLON's 45 library, 41 binary and
 six compiled CLI tests on Rust 1.87.0 against this local parser.
 
 Parser/FLON throughput, allocation and RSS measurements, long-lived streams,
-deep paths and large tokens remain developer-run. See FLON's performance guide.
+deep paths and large tokens remain developer-run. See the [parser measurement guide](performance.md) and FLON's performance guide.
 Publication follows the release guide after validation gaps are resolved.

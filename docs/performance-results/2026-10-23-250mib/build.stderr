@@ -1,0 +1,8 @@
+   Compiling json-skimmer v1.0.0 (/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer)
+   Compiling json-volcano v1.0.0
+warning: linker stderr: ignoring deprecated linker optimization setting "1"
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `json-skimmer` (example "measure") generated 1 warning
+    Finished `release` profile [optimized] target(s) in 0.49s

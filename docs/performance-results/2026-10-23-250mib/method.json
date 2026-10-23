@@ -1,0 +1,15 @@
+{
+  "fixture_mib": 250,
+  "repeats": 3,
+  "seed": 42,
+  "toolchain_bin": "/home/joel/sandboxed/workspaces/rust-utilities/.tools/rust/rustup-home/toolchains/stable-x86_64-unknown-linux-gnu/bin",
+  "environment": {
+    "RUSTC": "/home/joel/sandboxed/workspaces/rust-utilities/.tools/rust/rustup-home/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc",
+    "CARGO_TARGET_DIR": "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target"
+  },
+  "cache": "not flushed",
+  "allocation_measurements": "not collected",
+  "depth": 1,
+  "rss": "process peak includes preloaded fixture in memory mode; not parser-only",
+  "timing": "internal elapsed excludes preload/open; includes parser/buffer setup, reads and EOF"
+}

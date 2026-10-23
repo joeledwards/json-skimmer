@@ -1,0 +1,11 @@
+[
+  "/usr/bin/time",
+  "-v",
+  "-o",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/perf-parser-bk2vjitl/string-1-stream-65536.time",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/release/examples/measure",
+  "stream",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/perf-parser-bk2vjitl/string-1.json",
+  "65536",
+  "3"
+]

@@ -1,0 +1,11 @@
+[
+  "/usr/bin/time",
+  "-v",
+  "-o",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/perf-parser-8g3undfk/string-1-memory-8192.time",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/release/examples/measure",
+  "memory",
+  "/home/joel/sandboxed/workspaces/rust-utilities/repos/json-skimmer/target/perf-parser-8g3undfk/string-1.json",
+  "8192",
+  "3"
+]

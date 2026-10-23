@@ -1,0 +1,20 @@
+[
+  "/home/joel/.cargo/bin/json-volcano",
+  "--bytes",
+  "1024MiB",
+  "--seed",
+  "42",
+  "--shape",
+  "string",
+  "--candidates",
+  "1",
+  "--depth",
+  "1",
+  "--scenario",
+  "valid",
+  "--escape-percent",
+  "2",
+  "--unicode-percent",
+  "2",
+  "--stats"
+]
