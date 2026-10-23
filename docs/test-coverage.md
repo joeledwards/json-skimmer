@@ -106,3 +106,23 @@ was 4 KiB; the adaptive length limit reached 461. Rust 1.87.0 library/example
 tests passed. See
 [validation instructions](validation.md) for commands, bounds and known MSRV
 constraints and remaining validation gaps.
+
+
+## Development resource probe
+
+`examples/resources.rs` and `examples/support/allocation.rs` test public parser
+candidate counts and requested heap behavior for depth 1/8/64, payloads 0/9/4096,
+and chunks 1/7/8192, repeated candidates, malformed/truncated cleanup and
+allocator growth/drop accounting. Instrumentation is current-thread and limited
+to the parser lifetime; fixture generation/reporting is excluded. Workspace
+Python tests validate reporting, bounded workloads and cross-case growth checks.
+See [performance](performance.md) for the developer-run larger resource matrix.
+Gaps: sustained hours-long workloads, allocator RSS/fragmentation and more varied
+candidate sequences; finite synthetic success does not prove universal bounds.
+
+Developer-run resource campaign passed all 66 checks. The retained
+[results](performance-results.md) cover depth through 1,000, strings through
+8 MiB and 100,000 equal-depth successive candidates, two chunk sizes and
+three process repetitions. No post-first-candidate allocation or post-drop
+tracked allocation remained. Extended varied-input soak and allocator RSS
+remain outside this bounded campaign.

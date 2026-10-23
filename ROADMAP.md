@@ -44,9 +44,11 @@ pending validation and publication remain unchecked. See
 - [x] Port distinct active Node fixtures and extended Rust compatibility cases
       in FLON; add UTF-8, recovery, precision, and chunking fixtures
 - [x] Reverify FLON compatibility against the local 1.0 release-candidate API
-- [ ] Benchmark throughput, allocations, nesting, long-lived streams, and large
-      tokens; demonstrate memory proportional to depth in the parser and active
-      keys/configured output storage in FLON
+- [x] Measure parser throughput, allocations, nesting, large tokens and bounded
+      repeated-candidate stability; see docs/performance-results.md (250 MiB/1 GiB
+      throughput and 66 resource checks; not an hours-long varied-input soak)
+- [ ] Complete remaining FLON performance evidence for active keys/configured
+      output storage; retain any extended soak-test gaps explicitly
 - [x] Review public API stability and unsafe-code usage; check that later
       adapters can be added without changing the core event contract
 - [x] Establish and test a minimum supported Rust version (1.87; library/examples verified by developer)

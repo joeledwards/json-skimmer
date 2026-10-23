@@ -2,7 +2,9 @@
 
 The supported core is `Parser`, `Mode`, `Event`, `ParseError`, `ErrorKind`,
 `ContainerKind`, `StringKind` and `DEFAULT_MAX_DEPTH`. The core has no runtime
-dependencies and uses no unsafe code. This review covers repository-owned code,
+dependencies and uses no unsafe code in the parser library. The development-only
+resource measurement example uses an unsafe `GlobalAlloc` implementation that
+delegates to `System`; it is not linked into the library. This review covers repository-owned code,
 not an audit of the Rust standard library or development dependencies.
 
 ## Contracts to preserve

@@ -96,3 +96,12 @@ six compiled CLI tests on Rust 1.87.0 against this local parser.
 Parser/FLON throughput, allocation and RSS measurements, long-lived streams,
 deep paths and large tokens remain developer-run. See the [parser measurement guide](performance.md) and FLON's performance guide.
 Publication follows the release guide after validation gaps are resolved.
+
+
+The [resource measurement campaign](performance.md#allocation-nesting-and-repeated-candidate-checks)
+passed the developer-run 66-check campaign: depth through 1,000, strings through
+8 MiB and 100,000 successive candidates. Allocation counts plateaued after the
+first equal-depth candidate and all tracked allocations were released on drop.
+See [retained results](performance-results.md) for measurements and limitations.
+This closes the bounded parser resource campaign; FLON evidence and final
+release checks remain separate.

@@ -29,5 +29,39 @@ not an additional measured result. Keep three repetitions and compare matching
 shapes, candidate counts, chunks and modes. Cache was not flushed and background
 load was uncontrolled. There is no timing pass/fail threshold.
 
-Allocation counts, depth scaling and long-lived streams remain open. Existing
+Allocation/depth/repeated-candidate evidence follows below. Existing
 unit/reference/fuzz evidence is separate from these valid-input measurements.
+
+
+## 2026-10-23 — parser resource checks on hulk
+
+Developer-run `scripts/measure-json-skimmer-resources`: all **66 checks passed**
+(11 cases, two chunk sizes, three independent process repetitions).
+[Raw results](performance-results/2026-10-23-resources/results.json), method,
+compiler/host/build identity, commands, source snapshots and executable hash are
+retained in the same directory. No generated fixture or executable is included.
+The build used local uncommitted resource examples on top of parser commit
+81a7f82; exact example inputs are retained as source snapshots.
+
+| Workload | Successful allocation/reallocation calls | Peak live requested heap |
+| --- | ---: | ---: |
+| Depth 1 | 1 | 8 B |
+| Depth 16 | 3 | 32 B |
+| Depth 128 | 6 | 256 B |
+| Depth 1,000 | 9 | 2,048 B |
+| String sizes 16 B / 64 KiB / 1 MiB / 8 MiB, depth 1 | 1 in every case | 8 B in every case |
+| 1 / 1,000 / 100,000 successive candidates, depth 16 | 3 in every case | 32 B in every case |
+
+Heap metrics were identical across chunk sizes and repetitions. No allocation
+occurred after the first equal-depth candidate. Retained requested heap was
+unchanged as completed-candidate counts increased. All tracked allocations
+were released on parser drop. The depth results are consistent with stack
+capacity growing with depth; exact sizes are observations, not API promises.
+
+Accounting excludes input fixtures and reporting, and measures requested
+current-thread heap bytes, not process RSS, allocator overhead, fragmentation
+or transient realloc-copy peaks. Fixture payloads contain UTF-8 and raw escapes.
+Repeated candidates reuse one fixture on one parser, covering lifecycle
+accumulation rather than hours-long elapsed runtime or diverse production
+traffic. This is bounded evidence for depth/scalar-size/candidate-count scaling;
+extended varied-duration soak testing remains outside this campaign.
