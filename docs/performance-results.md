@@ -9,8 +9,8 @@ shallow-input RSS observations, not completion of all release validation.
 
 | Fixture | Records: range of configuration medians | Strings: range of configuration medians | Artifacts |
 | --- | --- | --- | --- |
-| 250 MiB | 151.82–157.01 MiB/s | 145.24–148.54 MiB/s | [Summary](performance-results/2026-10-23-250mib/summary.json) |
-| 1 GiB | 152.20–156.69 MiB/s | 145.75–149.02 MiB/s | [Summary](performance-results/2026-10-23-1024mib/summary.json) |
+| 250 MiB | 151.82–157.01 MiB/s | 145.24–148.54 MiB/s | [Summary](https://github.com/joeledwards/json-skimmer/blob/16e3c81/docs/performance-results/2026-10-23-250mib/summary.json) |
+| 1 GiB | 152.20–156.69 MiB/s | 145.75–149.02 MiB/s | [Summary](https://github.com/joeledwards/json-skimmer/blob/16e3c81/docs/performance-results/2026-10-23-1024mib/summary.json) |
 
 Each artifact directory retains method/host/compiler/build identity, local diff,
 commands, per-repetition JSONL, input and executable hashes, and GNU time logs.
@@ -37,7 +37,7 @@ unit/reference/fuzz evidence is separate from these valid-input measurements.
 
 Developer-run `scripts/measure-json-skimmer-resources`: all **66 checks passed**
 (11 cases, two chunk sizes, three independent process repetitions).
-[Raw results](performance-results/2026-10-23-resources/results.json), method,
+[Raw results](https://github.com/joeledwards/json-skimmer/blob/16e3c81/docs/performance-results/2026-10-23-resources/results.json), method,
 compiler/host/build identity, commands, source snapshots and executable hash are
 retained in the same directory. No generated fixture or executable is included.
 The build used local uncommitted resource examples on top of parser commit

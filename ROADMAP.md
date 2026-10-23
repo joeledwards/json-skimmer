@@ -47,14 +47,22 @@ pending validation and publication remain unchecked. See
 - [x] Measure parser throughput, allocations, nesting, large tokens and bounded
       repeated-candidate stability; see docs/performance-results.md (250 MiB/1 GiB
       throughput and 66 resource checks; not an hours-long varied-input soak)
-- [ ] Complete remaining FLON performance evidence for active keys/configured
-      output storage; retain any extended soak-test gaps explicitly
 - [x] Review public API stability and unsafe-code usage; check that later
       adapters can be added without changing the core event contract
 - [x] Establish and test a minimum supported Rust version (1.87; library/examples verified by developer)
 - [x] Complete metadata, licensing files, and initial crate documentation
-- [ ] Run final unit, documentation, formatting, lint, and authorized release checks
+- [x] Run final offline unit/example/doc, formatting, lint, documentation and
+      package verification checks (Rust 1.87 tests/package; stable lint/format)
 - [ ] Publish `json-skimmer` 1.0.0, then allow FLON to use the published dependency
+
+## Downstream release tracking
+
+FLON still owns its remaining active-key/output-storage performance evidence,
+reference-output comparison and final registry-dependency verification. Existing
+FLON compatibility tests passed against this parser's public API. Those FLON
+release tasks do not require additional parser features or block uploading the
+validated parser first. Extended varied-input soak testing remains an explicit
+limitation of the bounded parser campaign, not completed evidence.
 
 ## 1.x — additive convenience features (scope reviewed per release)
 

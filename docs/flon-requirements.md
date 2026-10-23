@@ -27,10 +27,10 @@ in the README and public API. See the release roadmap and coverage matrices.
 
 ## Coordinated release boundary
 
-The initial releases are coordinated 0.1.0 versions: publish `json-skimmer`
-first, then FLON using that published dependency. These pre-1.0 releases ship
-the implemented core; the stability and validation gates below remain open
-for 1.0. Parser 1.0 stabilizes raw events, strict/scan
+Both initial 0.1.0 releases are published. Publish `json-skimmer` 1.0.0
+first, then FLON using that published dependency. Parser validation evidence
+is recorded in docs/validation.md and docs/performance-results.md; remaining
+FLON release checks belong to FLON. Parser 1.0 stabilizes raw events, strict/scan
 modes, discard recovery, resource limits, lifecycle/offset/error contracts, and
 usable documentation. Runnable examples, independent correctness comparisons,
 fuzzing, benchmarks, and API/package review are release gates.
