@@ -261,13 +261,22 @@ impl Parser {
         }
     }
 
+    /// Number of consumed bytes. A terminal error consumes its offending byte
+    /// but leaves the remainder of that chunk unconsumed. Closed parsers do
+    /// not advance this offset.
     pub fn offset(&self) -> u64 {
         self.offset
     }
 
+    /// Processes input until exhausted or a terminal error occurs.
+    /// After [`Self::finish`] or a terminal error, this is a no-op: no events
+    /// are emitted and [`Self::offset`] remains unchanged.
     pub fn push<'a>(&mut self, input: &'a [u8], mut emit: impl FnMut(Event<'a>)) {
+        if self.terminal {
+            return;
+        }
         for (index, &byte) in input.iter().enumerate() {
-            let absolute = self.offset + index as u64;
+            let absolute = self.offset;
             let fragment = &input[index..index + 1];
             let was_active = self.candidate_start.is_some();
             let mut depth_exceeded = false;
@@ -285,10 +294,16 @@ impl Parser {
             {
                 self.scan(byte, absolute, &mut emit);
             }
+            self.offset += 1;
+            if self.terminal {
+                break;
+            }
         }
-        self.offset += input.len() as u64;
     }
 
+    /// Signals EOF and permanently closes this parser after emitting any final
+    /// token or error events. Repeated calls emit nothing. Later pushes are
+    /// ignored; construct a new parser to process another stream.
     pub fn finish(&mut self, mut emit: impl FnMut(Event<'static>)) {
         if self.terminal {
             return;
@@ -312,6 +327,7 @@ impl Parser {
         } else if self.mode == Mode::Single && !self.completed_single {
             self.fail_single(ErrorKind::ExpectedSingleValue, self.offset, &mut emit);
         }
+        self.terminal = true;
     }
 
     fn process<'a>(

@@ -48,7 +48,7 @@ by the initial unit tests in the current development environment:
 - [ ] Coalesce contiguous string and number fragments within each input chunk
 - [x] Add configurable nesting limits (default 1,000 containers)
 - [ ] Add configurable candidate-span limits
-- [ ] Make parser completion and post-completion behavior explicit
+- [x] Make parser completion and post-completion behavior explicit
 - [ ] Expand grammar tests for every string escape and number state
 - [ ] Test every lexical token across every possible chunk boundary
 - [ ] Test arbitrary non-JSON bytes before, between, and after candidates

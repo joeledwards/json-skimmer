@@ -1,5 +1,70 @@
 use super::*;
 
+#[test]
+fn finish_is_final_and_idempotent_for_all_candidate_outcomes() {
+    for mode in [Mode::Scan, Mode::Single] {
+        for input in [
+            b"".as_slice(),
+            b"{}",
+            b"[1",
+            b"[\"\xe2",
+            b"[true]",
+            b"[truX]",
+        ] {
+            let mut parser = Parser::new(mode);
+            parser.push(input, |_| {});
+            let mut first_finish = Vec::new();
+            parser.finish(|event| record(&mut first_finish, event));
+            if input == b"[1" {
+                assert_eq!(first_finish.len(), 2); // NumberEnd, then UnexpectedEnd.
+                assert!(first_finish[0].starts_with("NumberEnd"));
+                assert!(first_finish[1].contains("UnexpectedEnd"));
+            }
+            let offset = parser.offset();
+            for _ in 0..3 {
+                parser.finish(|event| panic!("duplicate finish event: {event:?}"));
+                parser.push(b"{} [] garbage", |event| {
+                    panic!("post-finish event: {event:?}")
+                });
+                parser.push(b"", |event| panic!("post-finish empty event: {event:?}"));
+                assert_eq!(parser.offset(), offset);
+            }
+        }
+    }
+}
+
+#[test]
+fn terminal_errors_freeze_offset_after_consuming_the_offending_byte() {
+    for (input, expected_offset) in [
+        (b"x{}".as_slice(), 1),
+        (b"{} []", 4),
+        (b"[truX] {}", 5),
+        (b"[\"\xff\"] {}", 3),
+    ] {
+        for split in 0..=input.len() {
+            let mut parser = Parser::new(Mode::Single);
+            let mut errors = Vec::new();
+            for chunk in [&input[..split], &input[split..]] {
+                parser.push(chunk, |event| {
+                    if let Event::Invalid(error) = event {
+                        errors.push(error);
+                    }
+                });
+            }
+            assert_eq!(errors.len(), 1);
+            assert_eq!(parser.offset(), expected_offset, "{input:?}, split {split}");
+            parser.push(b"[]", |event| panic!("terminal event: {event:?}"));
+            parser.finish(|event| panic!("terminal finish event: {event:?}"));
+            assert_eq!(parser.offset(), expected_offset);
+        }
+    }
+    let mut parser = Parser::with_max_depth(Mode::Single, std::num::NonZeroUsize::new(1).unwrap());
+    parser.push(b"[[]] {}", |_| {});
+    assert_eq!(parser.offset(), 2);
+    parser.push(b"[]", |_| panic!("terminal depth error resumed"));
+    assert_eq!(parser.offset(), 2);
+}
+
 fn nested_containers(depth: usize, shape: &str) -> (Vec<u8>, Vec<u64>) {
     let mut input = Vec::new();
     let mut openers = Vec::new();
@@ -433,7 +498,14 @@ fn parse_with_depth(
         }
         record(&mut events, event);
     });
-    assert_eq!(parser.offset(), input.len() as u64);
+    let consumed = if mode == Mode::Single {
+        errors.first().map_or(input.len() as u64, |error| {
+            (error.offset + 1).min(input.len() as u64)
+        })
+    } else {
+        input.len() as u64
+    };
+    assert_eq!(parser.offset(), consumed);
     (events, errors, spans)
 }
 

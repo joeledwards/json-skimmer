@@ -206,3 +206,21 @@ discards candidate state and consumes the rejected opener; scanning resumes
 with the following byte. Later openers may still start candidates, including
 ones inside the rejected document. This policy does not skip the whole
 document or replay the rejected opener.
+
+## Completion and terminal state
+
+`finish()` signals final EOF and permanently closes the parser after delivering
+any final events, including `NumberEnd` followed by `Invalid` for an unfinished
+container ending with a valid number. This applies to both modes and to valid,
+empty, and incomplete streams. Repeated `finish()` calls are no-ops. A closed
+parser ignores all later `push()` calls, including empty chunks, without events
+or offset changes. Reuse requires constructing a new parser.
+
+Single-mode terminal errors close the parser immediately. `offset()` counts
+consumed bytes: the offending byte is consumed, then the remainder of the
+current chunk is ignored. Thus the frozen offset is one beyond the terminal
+error offset for byte-triggered errors, or the EOF offset for errors discovered
+by `finish()`. This result is independent of chunk divisions. Candidate
+completion alone is not final: scan mode can find subsequent candidates, and
+single mode continues checking trailing whitespace/data until EOF. Recoverable
+scan-mode errors do not close the parser.

@@ -9,7 +9,8 @@ and `src/contract_tests.rs` and use public parser events and methods.
 | Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets | Expand cases with each bug fix |
 | Chunk independence | Whole input, every two-chunk split, one-byte chunks, eight deterministic random partitions; normalized fragments | Broader generated/property corpus |
 | Recovery | Malformed candidates, conflicting opener, arbitrary leading byte; absolute spans and offsets | Depth-limit recovery, including consuming the rejected opener |
-| Strict mode | Missing roots, scalar roots, trailing data | Explicit post-finish contract |
+| Strict mode | Missing roots, scalar roots, trailing data, frozen terminal offsets independent of chunk divisions | Broader generated strict-mode corpus |
+| Completion | Final/idempotent finish on valid, empty, incomplete, and invalid streams in both modes; no post-close callbacks or offset changes; EOF event ordering; terminal UTF-8, syntax, and depth errors | Broader generated lifecycle sequences |
 | UTF-8 | Boundary/common-text generators; all 256 replacements at each continuation position compared with Rust UTF-8 validation; every incomplete prefix at quote/EOF; mixed scripts, emoji, combining characters, escapes, raw fragment preservation, repeated recovery; keys and values | Broader arbitrary-byte/property corpus; exhaustive Unicode scalar coverage |
 | Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Candidate-span limits; overflow policy; bounded property tests and fuzzing |
 

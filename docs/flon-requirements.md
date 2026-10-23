@@ -24,8 +24,8 @@ JSON escapes, original number text, structured errors, strict/scan modes, and a
 configurable depth limit (default 1,000). Reusable decoded-key/value and path
 adapters described below remain planned 1.0.0 requirements; they are not
 prerequisites for the already working raw-fragment FLON consumer. Candidate-span
-limits, explicit post-finish semantics, and broader resilience validation also
-remain open. See the roadmap and both repositories’ test-coverage matrices.
+limits and broader resilience validation remain open. Completion is final and
+idempotent, as documented in the README and public API. See the roadmap and both repositories’ test-coverage matrices.
 
 ## Library capabilities required from json-skimmer
 
