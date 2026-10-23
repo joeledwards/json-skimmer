@@ -1,109 +1,87 @@
-# Roadmap
+# Release roadmap
 
-This roadmap tracks intended work, not release promises. The design contract is
-documented in [`docs/design.md`](docs/design.md).
+## Release sequence and scope
 
-The minimum feature set for the first stable release is defined by the
-[`1.0.0` FLON requirements](docs/flon-requirements.md). Items not needed by
-FLON may still be included in `1.0.0`, but they must not delay validation of the
-FLON use case unless they are part of the promised public API.
+Target coordinated **1.0.0 releases** of `json-skimmer` and FLON once both core
+checklists are complete. Publish `json-skimmer` first, then FLON against that
+published dependency. There are no calendar deadlines or required interim 0.x
+releases. Publishing and other external actions remain developer-controlled.
 
-## Priority follow-up from project review
+The first release stabilizes the raw incremental event parser. Convenience
+adapters are later work, not 1.0 blockers. See the [FLON release roadmap](../flon/ROADMAP.md),
+[design](docs/design.md), and [FLON acceptance requirements](docs/flon-requirements.md).
+Update these checklists and the coverage matrix as work lands. A checked item
+means implemented/verified behavior, not merely a design proposal.
 
-- [x] Validate UTF-8 incrementally across chunk boundaries and reject invalid
-      sequences before emitting `CandidateEnd`; confirmed FLON output depends
-      on this validity guarantee.
-- [x] Add configurable nesting limits with documented defaults and recovery
-      behavior so deeply nested input cannot grow the structural stack without
-      bound. Expose configuration for FLON consumers.
-- [x] Expand chunk-boundary and invalid-input tests, especially malformed and
-      incomplete UTF-8, nesting-limit boundaries, and EOF event sequences.
-- [x] Reconcile the roadmap and FLON requirements with functionality already
-      demonstrated by the FLON consumer, distinguishing consumer-provided
-      behavior from parser APIs that remain to be implemented.
+## 1.0.0 — core parser
 
-Related formatter error propagation, color accounting, and documentation tasks
-are prioritized in the [FLON roadmap](../flon/ROADMAP.md).
-
-## Current foundation
-
-The following foundation has been compiled, formatted, linted, and exercised
-by the initial unit tests in the current development environment:
-
-- [x] Dependency-free crate scaffold
-- [x] Incremental `push` interface with borrowed event fragments
-- [x] Discovery of top-level objects and arrays
-- [x] Object and array structural state
-- [x] Strings, escapes, numbers, booleans, and null
-- [x] Candidate start, completion, and invalid events with byte offsets
-- [x] Forward-only discard recovery
-- [x] Strict single-container mode
-- [x] Initial chunk-boundary and recovery unit tests
-
-## Milestone 1: correct bounded-memory event parser
-
-- [x] Compile the crate and resolve all diagnostics
-- [x] Apply `rustfmt` and pass `clippy`
+- [x] Dependency-free incremental `push` API with borrowed raw fragments
+- [x] Discover root objects/arrays and emit ordered container and scalar events
+- [x] Preserve raw JSON escapes and exact number spelling
 - [x] Validate UTF-8 incrementally across chunk boundaries
-- [ ] Coalesce contiguous string and number fragments within each input chunk
-- [x] Add configurable nesting limits (default 1,000 containers)
-- [ ] Add configurable candidate-span limits
-- [x] Make parser completion and post-completion behavior explicit
-- [ ] Expand grammar tests for every string escape and number state
-- [ ] Test every lexical token across every possible chunk boundary
-- [ ] Test arbitrary non-JSON bytes before, between, and after candidates
-- [ ] Test mismatched delimiters, trailing commas, truncated input, and overflow
-- [x] Add bounded deterministic tree, mutation, truncation, and arbitrary-byte
-      properties with chunk/lifecycle invariants
-- [ ] Extend arbitrary-input resilience validation with fuzzing
-- [ ] Document the public API with runnable examples
+- [x] Scan mode with documented forward-only discard recovery
+- [x] Strict single-container mode
+- [x] Candidate lifecycle, structured errors, and absolute byte offsets
+- [x] Configurable depth limits; default 1,000 containers
+- [x] Final/idempotent EOF, terminal errors, and frozen-offset semantics
+- [ ] Coalesce contiguous string and number fragments within each input chunk;
+      preserve semantics without promising particular fragment sizes
+- [ ] Add configurable candidate-span limits with documented counting,
+      boundary, and recovery behavior
+- [ ] Audit offset/counter overflow and define explicit failure behavior
+- [ ] Finish systematic grammar coverage for escapes, number states, literals,
+      separators, mismatched delimiters, and truncation across chunk boundaries
+- [x] Add deterministic generated trees, mutations, truncations, arbitrary bytes,
+      and chunk/lifecycle properties
+- [ ] Compare accepted containers with an independent reference JSON parser
+- [ ] Add and exercise fuzz targets for parsing, chunk division, and recovery
+- [ ] Add runnable public API examples, including a synchronous `Read` loop,
+      speculative-event handling, recovery, limits, and EOF
 
-## Milestone 2: FLON-enabling event adapters
+## 1.0.0 — acceptance and release gates
 
-The active FLON crate already implements paths, bounded raw keys, streaming
-scalar rendering, `Read`/`Write` adapters, and confirmed-output buffering using
-public parser events. Those consumer features do not imply that reusable parser
-path/decoding adapters exist. The unchecked adapter items below remain planned
-public `json-skimmer` APIs. Compatibility tests live in FLON.
+- [x] Demonstrate a FLON consumer using only public parser APIs
+- [x] Port distinct active Node fixtures and extended Rust compatibility cases
+      in FLON; add UTF-8, recovery, precision, and chunking fixtures
+- [ ] Reverify FLON compatibility against the final release API
+- [ ] Benchmark throughput, allocations, nesting, long-lived streams, and large
+      tokens; demonstrate memory proportional to depth in the parser and active
+      keys/configured output storage in FLON
+- [ ] Review public API stability and unsafe-code usage; check that later
+      adapters can be added without changing the core event contract
+- [ ] Establish and test a minimum supported Rust version
+- [ ] Complete metadata, licensing files, and crates.io documentation
+- [ ] Run final unit, documentation, formatting, lint, and authorized release checks
+- [ ] Publish `json-skimmer` 1.0.0, then allow FLON to use the published dependency
 
-- [ ] Expose discard recovery as an explicit configuration policy
-- [ ] Implement a path-tracking adapter with active keys and array indexes
-- [ ] Provide decoded keys and string values with configurable token limits
-- [x] Preserve validated number text without numeric conversion
-- [ ] Emit path-aware object and array openings, including empty containers
-- [ ] Add a synchronous `std::io::Read` adapter or complete integration example
-- [x] Port distinct active `node-flon` fixtures as FLON compatibility unit tests
-- [x] Add junk recovery, Unicode, escaping, precision, and chunking fixtures
-- [x] Build a reference FLON formatter using only the public API (`repos/flon`)
-- [ ] Demonstrate memory proportional to depth, active keys, and token limits
+## 1.x — additive convenience features (scope reviewed per release)
 
-## Milestone 3: additional promised parser modes
+These are candidates for minor releases, not commitments to specific minor
+version numbers. Design each around demonstrated consumer needs and explicit
+memory limits. Review semver compatibility before assigning a release.
 
-- [ ] Implement bounded replay recovery
-- [ ] Specify behavior when replay retention limits are reached
-- [ ] Implement configurable candidate buffering
-- [ ] Emit complete owned objects and arrays after successful candidates
-- [ ] Define a lossless owned value preserving order, duplicate keys, and number text
-- [ ] Add raw-byte emission for complete candidates
-- [ ] Test speculative-event handling and failed-candidate cleanup
-- [ ] Test recovery from valid containers nested inside malformed candidates
+- [ ] Add decoded key/string adapters with correct escaped-Unicode handling
+      and configurable token limits; consider decoded streaming fragments
+- [ ] Add reusable path tracking with active keys, array indexes, and path-aware
+      container openings, including empty containers
+- [ ] Add a synchronous `Read` convenience adapter beyond the 1.0 example
+- [ ] Consider explicit recovery-policy configuration when another policy exists
+- [ ] Add bounded complete-candidate raw-byte buffering/emission
+- [ ] Design a lossless owned value preserving order, duplicate keys, and number
+      spelling; add bounded complete-container emission
+- [ ] Add optional Serde conversion and typed deserialization
+- [ ] Evaluate async adapters without coupling the parser core to a runtime
+- [ ] Design bounded replay recovery, including overlapping/speculative events,
+      retention exhaustion, cleanup, and nested-candidate recovery tests
 
-## Milestone 4: 1.0.0 release readiness
+## 2.0 and later — changes requiring a breaking-contract review
 
-- [ ] Evaluate async stream adapters without coupling the core to a runtime
-- [ ] Add optional `serde` conversion and typed deserialization
-- [ ] Add property tests comparing accepted containers with a reference parser
-- [ ] Add fuzz targets for parsing, chunk division, and recovery
-- [ ] Benchmark throughput, allocations, nesting, and large tokens
-- [ ] Review crate metadata, licensing files, and crates.io documentation
-- [ ] Establish a minimum supported Rust version
-- [ ] Perform an API and unsafe-code review
-- [ ] Verify the reference FLON formatter acceptance test
-- [ ] Publish the initial crates.io release before creating the public GitHub repository
+A feature does not require 2.0 merely because it is substantial. Use a major
+release when implementation would change an established public contract.
 
-## Possible future work
-
-- Discover top-level scalar JSON values when explicitly enabled
-- Decoded string-fragment events in addition to lossless raw fragments
-- Selective path matching similar to streaming JSON query tools
-- `no_std` plus `alloc` support if the core architecture permits it
+- [ ] Review changes to event shapes/lifetimes, error types, lifecycle, offsets,
+      default limits, or recovery semantics for compatibility before scheduling
+- [ ] Consider opt-in root scalar discovery, selective path matching, and
+      `no_std` plus `alloc`; assign to 1.x only if fully additive
+- [ ] Move any convenience proposal that cannot preserve the 1.x contract into
+      an explicitly designed major release

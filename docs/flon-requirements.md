@@ -21,11 +21,23 @@ ports the distinct active Node fixtures and adds Rust-specific cases.
 
 `json-skimmer` currently provides raw speculative events, validated UTF-8 and
 JSON escapes, original number text, structured errors, strict/scan modes, and a
-configurable depth limit (default 1,000). Reusable decoded-key/value and path
-adapters described below remain planned 1.0.0 requirements; they are not
-prerequisites for the already working raw-fragment FLON consumer. Candidate-span
-limits and broader resilience validation remain open. Completion is final and
-idempotent, as documented in the README and public API. See the roadmap and both repositories’ test-coverage matrices.
+configurable depth limit (default 1,000). Candidate-span limits and broader
+release validation remain open. Completion is final and idempotent, as documented
+in the README and public API. See the release roadmap and coverage matrices.
+
+## Coordinated release boundary
+
+The initial releases are coordinated 1.0.0 versions: finish and stabilize both
+cores, publish `json-skimmer` first, then FLON using that published dependency.
+No interim 0.x release is required. Parser 1.0 stabilizes raw events, strict/scan
+modes, discard recovery, resource limits, lifecycle/offset/error contracts, and
+usable documentation. Runnable examples, independent correctness comparisons,
+fuzzing, benchmarks, and API/package review are release gates.
+
+Decoded strings, reusable paths, replay recovery, owned values, Serde, and async
+adapters are later features, not 1.0 requirements. Review them for additive 1.x
+releases; use 2.0 only when an established contract must change. FLON does not
+wait for those adapters. The per-repository roadmaps are the release checklists.
 
 ## Library capabilities required from json-skimmer
 
@@ -40,34 +52,16 @@ idempotent, as documented in the README and public API. See the roadmap and both
 - Continue scanning after malformed input using discard recovery.
 - Apply configurable limits without recursive descent on the process stack.
 
-### Path tracking
+### Paths and values supplied by FLON
 
-A supplied adapter must track the path to each value:
+FLON retains raw active object keys, tracks zero-based array indexes, and emits
+ordered container declarations and scalar assignments. Its memory is
+proportional to depth, active keys, and configured output storage. Strings and
+numbers stream as validated raw fragments; typed events represent booleans and
+null. No reusable parser path adapter or whole scalar allocation is needed.
 
-- decoded object keys;
-- zero-based array indexes;
-- object versus array container kind; and
-- container open/close and scalar completion.
-
-Its retained state should be proportional to nesting depth and the active keys,
-not the total number of values already processed. The adapter must correctly
-advance array indexes after scalar, object, and array elements.
-
-### Values suitable for formatting
-
-The consumer must be able to write each FLON assignment when its value becomes
-complete:
-
-- strings as decoded text that can be escaped for the output notation;
-- numbers as their validated original text;
-- booleans and null as typed events; and
-- empty and non-empty container declarations with their paths.
-
-The current raw-fragment FLON formatter retains active keys but streams scalar
-string and number contents directly; it does not need to accumulate a complete
-scalar value. A future decoding adapter may accumulate tokens when necessary,
-but such storage must have configurable limits and must not imply buffering the
-enclosing document.
+Future decoding/path adapters must separately define escaped-Unicode handling,
+ownership, token limits, and memory behavior before being assigned a release.
 
 ### Stream integration
 

@@ -154,9 +154,9 @@ mode continues to ignore arbitrary bytes.
 Raw fragments borrow from the input passed to the current parser call. A
 consumer must copy a fragment if it needs the bytes after the callback returns.
 
-Lossless raw fragments alone are insufficient for every consumer. The `1.0.0`
-API must also provide a bounded way to obtain decoded object keys and string
-values. This may be a token accumulator with explicit limits, a decoding
+Lossless raw fragments alone are insufficient for every consumer. Future
+convenience APIs may provide a bounded way to obtain decoded object keys and
+string values. This may be a token accumulator with explicit limits, a decoding
 adapter, or decoded fragments with correct handling of escaped Unicode. Number
 text must remain available without conversion through a floating-point type.
 

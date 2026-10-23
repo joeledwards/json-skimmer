@@ -42,3 +42,11 @@ trailing data. Scan-mode recoverable errors also leave the parser open until
   work.
 
 - [Test coverage](docs/test-coverage.md) records tested contracts and remaining gaps.
+
+## Release plan
+
+The target is a coordinated 1.0.0 release with FLON.
+The parser publishes first, then FLON uses that published dependency. Core
+features and release gates are tracked in [the release roadmap](ROADMAP.md);
+convenience features are candidates for later 1.x releases, with breaking
+changes reviewed for 2.0. No release dates are assigned.
