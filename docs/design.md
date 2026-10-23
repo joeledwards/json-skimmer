@@ -178,7 +178,13 @@ and must not accidentally make raw parsing proportional to document size.
 
 The parser must not panic on arbitrary input. Malformed input is normal in scan
 mode and is represented by events. Integer overflow in offsets or counters must
-be handled explicitly. Deeply nested input must be constrained by configuration
+be handled explicitly. Before consuming a byte at absolute offset `u64::MAX`,
+the parser emits terminal `OffsetOverflow` in either mode, consumes nothing,
+and freezes the offset. This guard also bounds literal/completion span ends,
+fragment ends and candidate-length subtraction. Other counters are bounded by
+their states: four Unicode digits, four UTF-8 bytes, five literal bytes, and a
+Vec-backed depth stack. Empty pushes and EOF do not trigger overflow.
+Deeply nested input must be constrained by configuration
 rather than process stack recursion.
 
 The parser core should remain dependency-free unless a dependency provides a

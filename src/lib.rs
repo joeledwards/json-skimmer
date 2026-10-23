@@ -35,7 +35,10 @@ pub enum StringKind {
 }
 
 /// A parser event. Fragment bytes are the original JSON representation between
-/// the string quotes, including any escape sequences.
+/// the string quotes, including any escape sequences. Number fragments preserve
+/// the exact number spelling. Fragment boundaries are unspecified and can split
+/// UTF-8 and escapes; contiguous bytes are coalesced within each input chunk.
+/// All candidate events are speculative until [`Event::CandidateEnd`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event<'a> {
     CandidateStart {
@@ -283,7 +286,9 @@ impl Parser {
 
     /// Number of consumed bytes. A terminal error consumes its offending byte
     /// but leaves the remainder of that chunk unconsumed. Closed parsers do
-    /// not advance this offset.
+    /// not advance this offset. At `u64::MAX`, attempting another byte emits
+    /// [`ErrorKind::OffsetOverflow`] without consuming that byte and permanently
+    /// closes the parser in either mode. Empty pushes and EOF remain valid.
     pub fn offset(&self) -> u64 {
         self.offset
     }
@@ -395,9 +400,7 @@ impl Parser {
         if self.terminal {
             return;
         }
-        if let Some(Token::Number(state)) = self.token
-            && number_can_end(state)
-        {
+        if matches!(self.token, Some(Token::Number(state)) if number_can_end(state)) {
             emit(Event::NumberEnd {
                 offset: self.offset,
             });

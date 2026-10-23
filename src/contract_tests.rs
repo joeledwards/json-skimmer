@@ -975,3 +975,33 @@ fn lexical_states_reject_every_non_json_transition_and_truncation() {
         assert_chunk_invariance(input, Mode::Single);
     }
 }
+
+#[test]
+fn final_representable_byte_can_complete_candidates_and_tokens() {
+    for input in [
+        b"{}".as_slice(),
+        b"[true]",
+        b"[false]",
+        b"[null]",
+        b"[123]",
+        b"[\"x\"]",
+    ] {
+        for split in 0..=input.len() {
+            let mut parser = Parser::new(Mode::Single);
+            let start = u64::MAX - input.len() as u64;
+            parser.offset = start;
+            let mut spans = Vec::new();
+            let mut observe = |event: Event<'_>| match event {
+                Event::CandidateEnd { span, .. } => spans.push(span),
+                Event::Invalid(error) => panic!("{input:?}: {error:?}"),
+                _ => {}
+            };
+            parser.push(&input[..split], &mut observe);
+            parser.push(&input[split..], &mut observe);
+            parser.push(b"", &mut observe); // Empty input does not attempt overflow.
+            parser.finish(&mut observe);
+            assert_eq!(spans, vec![start..u64::MAX]);
+            assert_eq!(parser.offset(), u64::MAX);
+        }
+    }
+}

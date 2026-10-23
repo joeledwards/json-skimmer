@@ -4,7 +4,7 @@
 long-lived streams. It discovers top-level objects and arrays, reports malformed
 candidates, and can continue scanning for later JSON instead of terminating.
 
-The crate is in early development. Its core parser is dependency-free and does
+The core parser is dependency-free and does
 not buffer complete documents.
 
 The default maximum nesting depth is 1,000 containers, counting the root as
@@ -66,9 +66,30 @@ remain in place. No sibling generator checkout or Cargo patch is required.
 
 ## Release plan
 
-Publish initial **0.1.0** releases, json-skimmer first and FLON second. This
-makes the current streaming core available while its APIs are still pre-1.0.
-The 1.0 stability and validation gates remain tracked in the [roadmap](ROADMAP.md).
-See [release instructions](docs/releasing.md) for package checks, publication
-order and remaining limitations. Convenience adapters are later 1.x candidates;
-no release dates are assigned.
+The initial 0.1.0 releases are published. The next coordinated releases are
+**1.0.0**, json-skimmer first and FLON second. The core feature scope and
+remaining validation gates are tracked in the [roadmap](ROADMAP.md).
+See [release instructions](docs/releasing.md) for checks and publication order.
+Convenience adapters remain later 1.x candidates; no release dates are assigned.
+
+## Streaming example and stable contract
+
+The [read-loop example](examples/scan.rs) handles interrupted reads, EOF,
+resource limits, speculative statistics and recovery without retaining whole
+candidates. Run it with `cargo run --example scan < input.json`.
+
+Fragments borrow the current input chunk. Their boundaries are unspecified:
+consume them as raw bytes, since UTF-8 and escapes can cross fragments. The
+parser coalesces contiguous string/number bytes within a chunk without copying.
+Escaped `\uXXXX` code units are preserved, including unpaired surrogates; no
+Unicode decoding or surrogate-pair enforcement is performed on escapes.
+
+Absolute offsets cannot wrap. After consuming `u64::MAX` bytes, another
+nonempty push emits `OffsetOverflow` at that offset and permanently closes the
+parser in both modes, leaving the next byte unconsumed. This resource error
+takes precedence over candidate limits. Empty pushes and `finish()` at that
+offset remain valid. Allocation failure remains subject to Rust's allocator
+behavior; configured depth limits do not guarantee successful allocation.
+
+The 1.0 API contract and extension policy are recorded in
+[API stability](docs/api-stability.md).

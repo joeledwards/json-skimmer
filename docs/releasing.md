@@ -1,29 +1,34 @@
-# Releasing json-skimmer 0.1.0
+# Releasing json-skimmer 1.0.0
 
-Publish this initial pre-1.0 parser before FLON 0.1.0. The raw streaming core is
-implemented; API stabilization and the unchecked 1.0 roadmap items remain work
-for a later release. json-volcano 1.0.0 is a crates.io development dependency
-with default features disabled; no sibling generator patch is needed.
+The 0.1.0 release is published. Prepare and publish parser 1.0.0 before FLON
+1.0.0. Core features and API review are implemented; open validation gates in
+ROADMAP.md must be resolved before calling this release ready.
 
-## Local checks
+## Validation and local checks
 
-From the json-skimmer repository, using the workspace-local toolchain:
+First complete the independent reference/fuzz/MSRV checks in
+[validation](validation.md), record performance evidence, and reverify FLON
+against the local final parser. The workspace rules require explicit permission
+for integration, fuzzing, reference runs, benchmarks and downloads.
+
+From this repository, using the workspace-local toolchain:
 
 ```bash
 ../../scripts/with-rust cargo fmt --check
 ../../scripts/with-rust cargo test --offline --locked --lib
+../../scripts/with-rust cargo test --offline --locked --examples
 ../../scripts/with-rust cargo test --offline --locked --doc
-../../scripts/with-rust cargo clippy --offline --locked --lib -- -D warnings
+../../scripts/with-rust cargo clippy --offline --locked --lib --examples -- -D warnings
 ../../scripts/with-rust cargo doc --offline --locked --no-deps
 ../../scripts/with-rust cargo package --offline --locked --allow-dirty --list
 ../../scripts/with-rust cargo package --offline --locked --allow-dirty
 ```
 
-`--allow-dirty` permits review of prepared working-tree files without an agent
-changing Git state. Review and commit the intended release before publishing.
-Inspect the package for LICENSE, README, docs and tests. Check the lockfile's
-json-volcano entry has a registry source and checksum. If the dependency is not
-cached, developer-authorized `cargo fetch` is needed before offline checks.
+Review license, README, docs, examples and tests in the package. The separate
+fuzz package/build artifacts must be excluded. json-volcano 1.0.0 remains a
+registry library-only development dependency; confirm its lock checksum.
+`--allow-dirty` permits reviewing prepared files without changing Git state.
+The developer reviews and commits the final release.
 
 ## Publishing (developer-run)
 
@@ -34,14 +39,14 @@ cargo publish --dry-run --locked
 cargo publish --locked
 ```
 
-After publication, change FLON's parser dependency to the published 0.1.0,
-refresh its lockfile, and follow FLON's release guide. A clean local package
-check is not proof of successful registry upload or name ownership.
+After upload succeeds, switch FLON from the local version+path dependency to
+`json-skimmer = "1.0.0"`, fetch it, refresh the lockfile and verify FLON again
+against the actual registry artifact. Package verification alone is not upload.
 
-## Pre-1.0 limitations
+## Scope and stable contract
 
-No MSRV is established. Fragment coalescing, offset-overflow policy, independent
-reference-parser comparisons, fuzzing and the remaining 1.0 grammar/API/release
-checks are not yet complete. Existing raw fragments remain speculative until
-CandidateEnd; scan mode discovers container roots with forward-only recovery.
-See ROADMAP.md and docs/test-coverage.md for the full contract and gaps.
+Raw speculative events, grammar/UTF-8 validation, resource limits, forward-only
+recovery, terminal EOF and explicit offset exhaustion form the core. See
+[API stability](api-stability.md). Decoding/path/owned/Serde/async adapters and
+replay recovery remain later work. The declared minimum Rust version is 1.87; the developer verified library
+and example tests on Rust 1.87.0.

@@ -2,18 +2,15 @@
 
 ## Release sequence and scope
 
-Publish initial **0.1.0 releases** to establish the crate names and make the
-implemented streaming core available. Publish json-skimmer first, then FLON
-against json-skimmer 0.1.0. json-volcano 1.0.0 is already published and is a
-registry development dependency in both consumers, with CLI features disabled.
-See [release instructions](docs/releasing.md) for checks, publication order and
-known pre-1.0 limitations. External checks and publication remain developer-run.
+The 0.1.0 releases are published and their GitHub repositories are public.
+The next coordinated release is **1.0.0**: finish the core and validation gates,
+publish json-skimmer first, then FLON against that registry dependency.
+json-volcano 1.0.0 remains a library-only development dependency.
 
-The 1.0 checklists below remain the stability target, rather than a claim that
-0.1 has passed every 1.0 acceptance gate. Parser decoding/path convenience
-adapters are later work, not prerequisites for either initial release. FLON
-already consumes only public raw parser events. Checked items represent
-implemented/verified work; pending tests and audits stay unchecked.
+Parser decoding/path convenience adapters remain later work. FLON consumes
+public raw parser events. Checked items represent implemented/verified work;
+pending validation and publication remain unchecked. See
+[API stability](docs/api-stability.md) and the coverage matrix for contracts.
 
 ## 1.0.0 — core parser
 
@@ -26,18 +23,19 @@ implemented/verified work; pending tests and audits stay unchecked.
 - [x] Candidate lifecycle, structured errors, and absolute byte offsets
 - [x] Configurable depth limits; default 1,000 containers
 - [x] Final/idempotent EOF, terminal errors, and frozen-offset semantics
-- [ ] Coalesce contiguous string and number fragments within each input chunk;
+- [x] Coalesce contiguous string and number fragments within each input chunk;
       preserve semantics without promising particular fragment sizes
 - [x] Add configurable candidate-span limits with documented counting,
       boundary, and recovery behavior
-- [ ] Audit offset/counter overflow and define explicit failure behavior
-- [ ] Finish systematic grammar coverage for escapes, number states, literals,
+- [x] Audit offset/counter overflow and define explicit failure behavior
+- [x] Finish systematic grammar coverage for escapes, number states, literals,
       separators, mismatched delimiters, and truncation across chunk boundaries
 - [x] Add deterministic generated trees, mutations, truncations, arbitrary bytes,
       and chunk/lifecycle properties
-- [ ] Compare accepted containers with an independent reference JSON parser
-- [ ] Add and exercise fuzz targets for parsing, chunk division, and recovery
-- [ ] Add runnable public API examples, including a synchronous `Read` loop,
+- [x] Compare accepted containers with an independent reference JSON parser
+- [x] Add and exercise fuzz targets for parsing, chunk division, and recovery
+      (bounded 60-second ASan campaign; see docs/validation.md)
+- [x] Add runnable public API examples, including a synchronous `Read` loop,
       speculative-event handling, recovery, limits, and EOF
 
 ## 1.0.0 — acceptance and release gates
@@ -45,13 +43,13 @@ implemented/verified work; pending tests and audits stay unchecked.
 - [x] Demonstrate a FLON consumer using only public parser APIs
 - [x] Port distinct active Node fixtures and extended Rust compatibility cases
       in FLON; add UTF-8, recovery, precision, and chunking fixtures
-- [ ] Reverify FLON compatibility against the final release API
+- [x] Reverify FLON compatibility against the local 1.0 release-candidate API
 - [ ] Benchmark throughput, allocations, nesting, long-lived streams, and large
       tokens; demonstrate memory proportional to depth in the parser and active
       keys/configured output storage in FLON
-- [ ] Review public API stability and unsafe-code usage; check that later
+- [x] Review public API stability and unsafe-code usage; check that later
       adapters can be added without changing the core event contract
-- [ ] Establish and test a minimum supported Rust version
+- [x] Establish and test a minimum supported Rust version (1.87; library/examples verified by developer)
 - [x] Complete metadata, licensing files, and initial crate documentation
 - [ ] Run final unit, documentation, formatting, lint, and authorized release checks
 - [ ] Publish `json-skimmer` 1.0.0, then allow FLON to use the published dependency

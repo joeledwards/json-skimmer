@@ -6,15 +6,16 @@ events and methods.
 
 | Behavior | Coverage | Remaining gaps |
 | --- | --- | --- |
-| Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans; generated trees with independent semantic-event traversal | Exhaustive lexical transitions; decoded adapters |
-| Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets | Expand cases with each bug fix; external reference-parser comparison |
+| Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans; generated trees with independent semantic-event traversal | Decoded adapters (outside core scope) |
+| Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets; every invalid escape byte and hex position, incomplete lexical/structural states, number/separator/mismatched-delimiter cases across chunks | Expand cases with each bug fix; external reference-parser comparison |
+| Fragment delivery | Borrowed contiguous runs within each chunk; valid/invalid/truncated strings, UTF-8, escapes and numbers; flush-before-error/recovery and every split; normalized whole/split/one-byte corpus | Performance measurements |
 | Chunk independence | Whole input, every two-chunk split, one-byte chunks, eight deterministic random partitions; normalized fragments | More complex generated documents |
 | Recovery | Malformed candidates, conflicting opener, arbitrary leading byte; absolute spans and offsets; depth-limit recovery consumes the rejected opener and resets for later candidates across chunk divisions | Broader generated recovery corpus |
 | Strict mode | Missing roots, scalar roots, trailing data, frozen terminal offsets independent of chunk divisions | Broader generated strict-mode corpus |
 | Completion | Final/idempotent finish on valid, empty, incomplete, and invalid streams in both modes; no post-close callbacks or offset changes; EOF event ordering; terminal UTF-8, syntax, and depth errors | Broader generated lifecycle sequences |
 | UTF-8 | Boundary/common-text generators; all 256 replacements at each continuation position compared with Rust UTF-8 validation; every incomplete prefix at quote/EOF; mixed scripts, emoji, combining characters, escapes, raw fragment preservation, repeated recovery; keys and values | Broader arbitrary-byte/property corpus; exhaustive Unicode scalar coverage |
-| Candidate spans | Exact and one-byte-over boundaries, every truncation prefix of UTF-8/escape/number/literal/nested inputs, invalid input, strict/scan recovery, absolute offsets and frozen lifecycle, per-candidate reset, offending-opener consumption, size/depth precedence; whole/every two-chunk split/one-byte input with normalized events | Counter/absolute-offset overflow audit |
-| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Overflow policy; external reference-parser comparison and fuzzing |
+| Candidate spans | Exact and one-byte-over boundaries, every truncation prefix of UTF-8/escape/number/literal/nested inputs, invalid input, strict/scan recovery, absolute offsets and frozen lifecycle, per-candidate reset, offending-opener consumption, size/depth precedence; whole/every two-chunk split/one-byte input with normalized events | Offset exhaustion covered separately |
+| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | External reference-parser comparison and fuzzing |
 
 Run lightweight unit tests from this repository:
 
@@ -77,3 +78,30 @@ depth-bias ordering. Value-size tests observe string payload bounds and ordered
 size-bias means. Finite variation scenarios run whole/every split/one-byte.
 Gaps: signal handling is manual; number-magnitude and record byte-size
 distributions and broader randomized tree topology are not implemented.
+
+## Offset exhaustion and API examples
+
+Seeded-counter tests exercise public push/finish behavior near `u64::MAX` in
+both modes: terminal overflow without consumption across chunk divisions,
+frozen lifecycle, and valid literal/string/number/candidate spans ending exactly
+at the maximum. A natural exabyte-scale run is not required. The counter audit
+and stable defaults are recorded in [API stability](api-stability.md).
+
+`examples/scan.rs` demonstrates synchronous Read, interrupted-read retry,
+resource limits, speculative statistics, recovery and mandatory EOF. Its two
+isolated tests exercise mixed/truncated input and input error propagation:
+
+```bash
+../../scripts/with-rust cargo test --offline --locked --example scan
+```
+
+## Prepared reference and fuzz validation
+
+The Python differential harness passed the developer-run 655-input corpus
+with 401 recovered candidates. The developer-run bounded ASan fuzz campaign
+passed 220,123 executions in 61 seconds using the native C++ linker, with no
+reported crash or invariant/sanitizer failure. Configured maximum input length
+was 4 KiB; the adaptive length limit reached 461. Rust 1.87.0 library/example
+tests passed. See
+[validation instructions](validation.md) for commands, bounds and known MSRV
+constraints and remaining validation gaps.
