@@ -44,6 +44,14 @@ more candidates, and single mode still accepts trailing whitespace or reports
 trailing data. Scan-mode recoverable errors also leave the parser open until
 `finish()` is called.
 
+## Companion JSON generator
+
+[json-volcano](https://crates.io/crates/json-volcano) is an independent sibling project
+with a programmable generator and optional CLI for exact-size seeded fixtures.
+It is not part of json-skimmer or its Cargo workspace. Its published 1.0 library is used as a development dependency for bounded
+valid/invalid/mixed/truncated fixture tests, without adding runtime dependencies
+to the parser. Existing independent tree-generated tests remain in place.
+
 ## Project documents
 
 - [Design](docs/design.md) describes the intended behavior, architecture, and

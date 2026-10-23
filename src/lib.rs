@@ -895,3 +895,6 @@ mod contract_tests;
 
 #[cfg(test)]
 mod generated_tests;
+
+#[cfg(test)]
+mod volcano_tests;

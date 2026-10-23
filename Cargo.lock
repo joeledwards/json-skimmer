@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "json-skimmer"
 version = "0.1.0"
+dependencies = [
+ "json-volcano",
+]
+
+[[package]]
+name = "json-volcano"
+version = "1.0.0"

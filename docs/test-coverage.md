@@ -56,3 +56,23 @@ Run just these properties from this repository:
 ```bash
 ../../scripts/with-rust cargo test --offline --lib generated_tests
 ```
+
+## Companion generator
+
+Generation contracts and tests belong to the independent sibling
+[json-volcano project](../../json-volcano/README.md), which exposes both a
+library and optional CLI. See its [coverage matrix](../../json-volcano/docs/test-coverage.md).
+Generator tests are run from that project, not this parser's Cargo workspace.
+
+Published json-volcano 1.0 fixtures are tested in `src/volcano_tests.rs`: both
+shapes, valid/invalid/mixed/truncated lifecycles, candidate counts, EOF errors,
+Unicode/escapes/numbers/depth and deterministic seeds. Events and tokens are
+normalized across whole input, every two-chunk split and one-byte chunks.
+Independent tree-generated semantic oracles remain in `src/generated_tests.rs`.
+
+Generator consumer tests also cover object-only/array-only/mixed roots, bounded
+infinite prefixes, parser-enforced maximum depths 1/4/128 and deterministic
+depth-bias ordering. Value-size tests observe string payload bounds and ordered
+size-bias means. Finite variation scenarios run whole/every split/one-byte.
+Gaps: signal handling is manual; number-magnitude and record byte-size
+distributions and broader randomized tree topology are not implemented.

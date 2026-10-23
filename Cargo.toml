@@ -9,3 +9,6 @@ categories = ["parser-implementations"]
 
 [dependencies]
 
+
+[dev-dependencies]
+json-volcano = { version = "1.0.0", default-features = false }
