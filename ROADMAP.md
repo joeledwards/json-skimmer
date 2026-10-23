@@ -16,9 +16,9 @@ FLON use case unless they are part of the promised public API.
 - [x] Add configurable nesting limits with documented defaults and recovery
       behavior so deeply nested input cannot grow the structural stack without
       bound. Expose configuration for FLON consumers.
-- [ ] Expand chunk-boundary and invalid-input tests, especially malformed and
+- [x] Expand chunk-boundary and invalid-input tests, especially malformed and
       incomplete UTF-8, nesting-limit boundaries, and EOF event sequences.
-- [ ] Reconcile the roadmap and FLON requirements with functionality already
+- [x] Reconcile the roadmap and FLON requirements with functionality already
       demonstrated by the FLON consumer, distinguishing consumer-provided
       behavior from parser APIs that remain to be implemented.
 
@@ -46,7 +46,8 @@ by the initial unit tests in the current development environment:
 - [x] Apply `rustfmt` and pass `clippy`
 - [x] Validate UTF-8 incrementally across chunk boundaries
 - [ ] Coalesce contiguous string and number fragments within each input chunk
-- [ ] Add configurable nesting and candidate-span limits
+- [x] Add configurable nesting limits (default 1,000 containers)
+- [ ] Add configurable candidate-span limits
 - [ ] Make parser completion and post-completion behavior explicit
 - [ ] Expand grammar tests for every string escape and number state
 - [ ] Test every lexical token across every possible chunk boundary
@@ -57,15 +58,21 @@ by the initial unit tests in the current development environment:
 
 ## Milestone 2: FLON-enabling event adapters
 
+The active FLON crate already implements paths, bounded raw keys, streaming
+scalar rendering, `Read`/`Write` adapters, and confirmed-output buffering using
+public parser events. Those consumer features do not imply that reusable parser
+path/decoding adapters exist. The unchecked adapter items below remain planned
+public `json-skimmer` APIs. Compatibility tests live in FLON.
+
 - [ ] Expose discard recovery as an explicit configuration policy
 - [ ] Implement a path-tracking adapter with active keys and array indexes
 - [ ] Provide decoded keys and string values with configurable token limits
-- [ ] Preserve validated number text without numeric conversion
+- [x] Preserve validated number text without numeric conversion
 - [ ] Emit path-aware object and array openings, including empty containers
 - [ ] Add a synchronous `std::io::Read` adapter or complete integration example
-- [ ] Port the `node-flon` fixtures as compatibility tests
-- [ ] Add junk recovery, Unicode, escaping, precision, and chunking fixtures
-- [ ] Build a small reference FLON formatter using only the public API
+- [x] Port distinct active `node-flon` fixtures as FLON compatibility unit tests
+- [x] Add junk recovery, Unicode, escaping, precision, and chunking fixtures
+- [x] Build a reference FLON formatter using only the public API (`repos/flon`)
 - [ ] Demonstrate memory proportional to depth, active keys, and token limits
 
 ## Milestone 3: additional promised parser modes

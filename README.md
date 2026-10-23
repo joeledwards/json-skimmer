@@ -20,3 +20,5 @@ container opens.
   capabilities needed to rebuild FLON in Rust.
 - [Roadmap](ROADMAP.md) distinguishes the current implementation from planned
   work.
+
+- [Test coverage](docs/test-coverage.md) records tested contracts and remaining gaps.

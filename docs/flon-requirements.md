@@ -11,6 +11,22 @@ This is behavioral compatibility, not bug-for-bug compatibility. The Rust
 implementation should produce valid, unambiguous output for cases where the
 Node implementation has incomplete escaping or recovery behavior.
 
+## Current implementation and remaining requirements
+
+The active `repos/flon` crate demonstrates formatting through public parser
+events without whole-document retention in live mode. It owns path tracking,
+limits on raw keys, streaming scalar rendering, `Read`/`Write` integration,
+recovery policy, confirmed-output buffering, CLI, and color. Its unit suite
+ports the distinct active Node fixtures and adds Rust-specific cases.
+
+`json-skimmer` currently provides raw speculative events, validated UTF-8 and
+JSON escapes, original number text, structured errors, strict/scan modes, and a
+configurable depth limit (default 1,000). Reusable decoded-key/value and path
+adapters described below remain planned 1.0.0 requirements; they are not
+prerequisites for the already working raw-fragment FLON consumer. Candidate-span
+limits, explicit post-finish semantics, and broader resilience validation also
+remain open. See the roadmap and both repositories’ test-coverage matrices.
+
 ## Library capabilities required from json-skimmer
 
 ### Correct incremental parsing
@@ -47,10 +63,11 @@ complete:
 - booleans and null as typed events; and
 - empty and non-empty container declarations with their paths.
 
-Because a FLON assignment cannot be emitted until its key and scalar value are
-known, the adapter may accumulate the current key or scalar token. Such storage
-must have configurable limits and must not imply buffering the enclosing
-document.
+The current raw-fragment FLON formatter retains active keys but streams scalar
+string and number contents directly; it does not need to accumulate a complete
+scalar value. A future decoding adapter may accumulate tokens when necessary,
+but such storage must have configurable limits and must not imply buffering the
+enclosing document.
 
 ### Stream integration
 
@@ -71,7 +88,7 @@ document.
 
 ## FLON application behavior
 
-The future Rust FLON project, rather than `json-skimmer`, owns:
+The Rust FLON project, rather than `json-skimmer`, owns:
 
 - rendering `json = {};` or `json = [];` for the root;
 - rendering identifier-safe keys with dot notation and other keys with bracket
@@ -114,7 +131,9 @@ contract. FLON alone does not justify making it a prerequisite for
 
 ## 1.0.0 acceptance test
 
-Before publishing `json-skimmer` `1.0.0`, a small reference FLON formatter must
-be implementable using only its public API. That formatter must pass the
+The active FLON formatter already uses only public parser APIs. Before
+publishing `json-skimmer` `1.0.0`, verify that it continues to pass the
 compatibility fixtures while processing incrementally with memory proportional
-to active depth, active keys, and the configured maximum scalar size.
+to active depth, active keys, and configured output buffering. Raw scalar
+fragments must remain streamable without a complete-token allocation. Future
+decoding adapters must separately demonstrate their configured token limits.

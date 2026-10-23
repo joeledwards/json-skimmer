@@ -46,8 +46,9 @@ The core parser owns lexical state and a structural stack. It does not own a
 complete candidate. Adapters may retain keys, paths, tokens, or candidate bytes
 according to their contracts.
 
-The FLON use case is served by the path-tracking layer, not by the
-complete-container layer. It must be possible to format a value as soon as that
+The active FLON consumer supplies its own path-tracking layer using public raw
+events; a reusable parser path adapter remains planned. FLON does not require
+the complete-container layer. It must be possible to format a value as soon as that
 value is complete while retaining only the active path and current token.
 
 ## Candidate lifecycle
@@ -75,7 +76,7 @@ Raw mode emits candidate, container, key, string, number, boolean, null, and
 error events. Large strings and numbers are represented as fragments so memory
 use does not depend on token length.
 
-### Complete-container mode
+### Complete-container mode (planned)
 
 This adapter buffers a candidate and emits an owned object or array only after
 `CandidateEnd`. Buffering is explicit and configurable. An invalid candidate
@@ -97,8 +98,9 @@ before the root closes is terminal for that parser instance.
 
 Discard is the default scanning policy. After `Invalid`, all state for the
 candidate is dropped and scanning resumes forward. Previously consumed opening
-delimiters are not reconsidered. If the byte exposing the conflict is itself
-`{` or `[`, it may immediately begin the next candidate.
+delimiters are not reconsidered. If the byte exposing a syntax conflict is itself
+`{` or `[`, it may immediately begin the next candidate. Depth-limit violations
+consume the rejected opener instead, as specified below.
 
 Discard recovery requires no candidate buffer and is the primary policy for
 long-lived diagnostic tools.
