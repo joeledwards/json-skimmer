@@ -1,18 +1,19 @@
 # Test coverage
 
 Update this matrix when public behavior changes. Tests live in `src/lib.rs`
-and `src/contract_tests.rs` and use public parser events and methods.
+`src/contract_tests.rs`, and `src/generated_tests.rs` and use public parser
+events and methods.
 
 | Behavior | Coverage | Remaining gaps |
 | --- | --- | --- |
-| Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans | Exhaustive lexical transitions; decoded adapters |
-| Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets | Expand cases with each bug fix |
-| Chunk independence | Whole input, every two-chunk split, one-byte chunks, eight deterministic random partitions; normalized fragments | Broader generated/property corpus |
+| Containers, literals, strings, escapes, number spellings | Valid grammar corpus; completion spans; generated trees with independent semantic-event traversal | Exhaustive lexical transitions; decoded adapters |
+| Invalid grammar and truncation | Invalid grammar corpus; exact error kinds, candidate starts, offsets | Expand cases with each bug fix; external reference-parser comparison |
+| Chunk independence | Whole input, every two-chunk split, one-byte chunks, eight deterministic random partitions; normalized fragments | More complex generated documents |
 | Recovery | Malformed candidates, conflicting opener, arbitrary leading byte; absolute spans and offsets | Depth-limit recovery, including consuming the rejected opener |
 | Strict mode | Missing roots, scalar roots, trailing data, frozen terminal offsets independent of chunk divisions | Broader generated strict-mode corpus |
 | Completion | Final/idempotent finish on valid, empty, incomplete, and invalid streams in both modes; no post-close callbacks or offset changes; EOF event ordering; terminal UTF-8, syntax, and depth errors | Broader generated lifecycle sequences |
 | UTF-8 | Boundary/common-text generators; all 256 replacements at each continuation position compared with Rust UTF-8 validation; every incomplete prefix at quote/EOF; mixed scripts, emoji, combining characters, escapes, raw fragment preservation, repeated recovery; keys and values | Broader arbitrary-byte/property corpus; exhaustive Unicode scalar coverage |
-| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Candidate-span limits; overflow policy; bounded property tests and fuzzing |
+| Resource bounds and resilience | Generated object/array/mixed-depth boundaries, default 1000, raised/custom limits, no rejected opening event, sibling/scalar accounting, strict/scan recovery across chunk divisions | Candidate-span limits; overflow policy; external reference-parser comparison and fuzzing |
 
 Run lightweight unit tests from this repository:
 
@@ -26,3 +27,31 @@ independent references. Generated mutation cases run as whole input and one-byte
 chunks; focused text, truncation, and recovery cases also run every two-chunk
 split and deterministic random partitions. Failures identify the source
 character, mutated byte position, replacement, and chunk division.
+
+## Bounded generated properties
+
+`src/generated_tests.rs` adds dependency-free deterministic generators:
+
+- 128 valid trees with up to four container levels and three children per
+  generated container. A separate tree traversal supplies expected semantic
+  events, including raw strings/numbers, object order, and duplicate keys.
+- Every proper prefix and every single-byte `0xff` replacement of 32 generated
+  documents. Strict mode must reject them; scan mode must discover a sentinel
+  appended after a NUL recovery boundary. Intermediate nested candidates are
+  permitted by discard recovery.
+- 256 byte streams of at most 96 bytes, alternating unrestricted bytes with a
+  JSON-like alphabet, exercised in both modes.
+
+Each generated input is checked whole, at a midpoint split, in one-byte chunks,
+and with a seeded variable-size partition. Observations normalize fragments,
+verify fragment bytes against source offsets, check candidate lifecycle and span
+bounds, and assert final/idempotent completion. Assertion diagnostics include
+seed, input, mutation position where applicable, and chunk cuts. The suite is
+bounded and does not establish correctness for all arbitrary inputs or replace
+fuzzing or comparison with an external JSON parser.
+
+Run just these properties from this repository:
+
+```bash
+../../scripts/with-rust cargo test --offline --lib generated_tests
+```

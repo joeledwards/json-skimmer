@@ -864,3 +864,6 @@ mod tests {
 
 #[cfg(test)]
 mod contract_tests;
+
+#[cfg(test)]
+mod generated_tests;

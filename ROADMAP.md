@@ -53,7 +53,9 @@ by the initial unit tests in the current development environment:
 - [ ] Test every lexical token across every possible chunk boundary
 - [ ] Test arbitrary non-JSON bytes before, between, and after candidates
 - [ ] Test mismatched delimiters, trailing commas, truncated input, and overflow
-- [ ] Ensure arbitrary input cannot panic
+- [x] Add bounded deterministic tree, mutation, truncation, and arbitrary-byte
+      properties with chunk/lifecycle invariants
+- [ ] Extend arbitrary-input resilience validation with fuzzing
 - [ ] Document the public API with runnable examples
 
 ## Milestone 2: FLON-enabling event adapters
